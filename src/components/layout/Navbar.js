@@ -50,7 +50,7 @@ const Wordmark = ({ onClick }) => (
       className="text-[18px] font-semibold tracking-[-0.01em] transition-colors"
       style={{ color: "#FFFFFF" }}
     >
-      Leatoinc
+      Leatonic
     </span>
   </Link>
 );
