@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Phone,
   Mail,
@@ -10,20 +13,205 @@ import {
   ArrowUpRight,
   ArrowUp,
   MapPin,
-  Sparkles,
   Loader2,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import { subscribe } from "@/lib/subscribers/api";
 
+gsap.registerPlugin(ScrollTrigger);
+
 // ============================================
-// SAME 3-COLOR SCHEME
+// BLUE SCHEME — matches Hero / About / Navbar / Testimonials
 // ============================================
-const TEAL = "#019586";
-const GREEN = "#00B777";
-const MINT = "#B1F1E9";
-const DARK = "#072A26";
+const INK = "#0A1A2F";
+const PAPER = "#F3F6FB";
+const ACCENT = "#1D4ED8";
+const ACCENT_DK = "#1E3A8A";
+const ACCENT_SOFT = "#DBEAFE";
+const ACCENT_LT = "#93C5FD";
+const LINE = "rgba(255,255,255,0.12)";
+const MUTED = "rgba(219,234,254,0.60)";
+const CARD = "#FFFFFF";
+
+// ============================================
+// BACKGROUND IMAGE — parallax
+// ============================================
+const BG_IMAGE =
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2400&auto=format&fit=crop";
+
+// ============================================
+// RICH HOVER LABEL — adjusted so tooltips don't overlap siblings
+// Tooltip now sits fully outside the hovered element via consistent
+// translate behavior; container is inline-block so it doesn't stretch.
+// ============================================
+const TemplateLabel = ({
+  children,
+  title,
+  description,
+  position = "top",
+  align = "center",
+}) => {
+  // Build the position class string from parts so we never get a half-valid class.
+  let posClass = "";
+  if (position === "top") {
+    posClass =
+      "bottom-full left-1/2 -translate-x-1/2 mb-2 group-hover/tl:-translate-y-1";
+  } else if (position === "bottom") {
+    posClass =
+      "top-full left-1/2 -translate-x-1/2 mt-2 group-hover/tl:translate-y-1";
+  } else if (position === "left") {
+    posClass =
+      "top-1/2 right-full -translate-y-1/2 mr-2 group-hover/tl:-translate-x-1";
+  } else if (position === "right") {
+    posClass =
+      "top-1/2 left-full -translate-y-1/2 ml-2 group-hover/tl:translate-x-1";
+  }
+
+  // Horizontal alignment for top/bottom tooltips when needed
+  let alignClass = "";
+  if (align === "start") alignClass = "left-0 -translate-x-0";
+  if (align === "end") alignClass = "right-0 -translate-x-0";
+
+  return (
+    <div className="group/tl relative inline-flex">
+      {children}
+      <div
+        className={`pointer-events-none absolute z-60 ${posClass} ${
+          (position === "top" || position === "bottom") && align !== "center"
+            ? alignClass
+            : ""
+        } opacity-0 transition-all duration-300 group-hover/tl:opacity-100`}
+      >
+        <div className="w-60 rounded-xl bg-black/95 p-3 shadow-2xl backdrop-blur-md">
+          <div
+            className="text-[10px] font-semibold tracking-wide"
+            style={{ color: ACCENT_LT }}
+          >
+            {title}
+          </div>
+          <div className="mt-1 text-[10px] leading-snug text-white/75">
+            {description}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// WORDMARK — text + glyph (no placeholder image)
+// ============================================
+const Wordmark = ({ onClick }) => (
+  <Link
+    href="/"
+    onClick={onClick}
+    className="group inline-flex items-center gap-2.5"
+    aria-label="Estate — home"
+  >
+    <span
+      className="flex h-8 w-8 items-center justify-center rounded-md transition-transform duration-300 group-hover:rotate-[8deg]"
+      style={{ backgroundColor: ACCENT }}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 11l9-8 9 8" />
+        <path d="M5 10v10h14V10" />
+      </svg>
+    </span>
+    <span
+      className="text-[20px] font-semibold tracking-[-0.01em]"
+      style={{ color: "#FFFFFF" }}
+    >
+      Estate
+    </span>
+  </Link>
+);
+
+// ============================================
+// SOCIAL ICONS
+// ============================================
+const socialLinks = [
+  {
+    name: "Facebook",
+    href: "#",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+      </svg>
+    ),
+  },
+  {
+    name: "Instagram",
+    href: "#",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+      </svg>
+    ),
+  },
+  {
+    name: "YouTube",
+    href: "#",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+      </svg>
+    ),
+  },
+  {
+    name: "LinkedIn",
+    href: "#",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+      </svg>
+    ),
+  },
+];
+
+// ============================================
+// FOOTER LINK GROUPS
+// ============================================
+const footerLinks = {
+  company: [
+    { name: "Home", href: "/" },
+    { name: "About", href: "/about" },
+    { name: "Properties", href: "/properties" },
+    { name: "Services", href: "/services" },
+    { name: "Contact", href: "/contact" },
+  ],
+  resources: [
+    { name: "Blog", href: "/blogs" },
+    { name: "Listings", href: "/properties" }
+   
+  ],
+};
+
+// ============================================
+// STAGGER VARIANTS
+// ============================================
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+  },
+};
 
 export default function Footer() {
   const [name, setName] = useState("");
@@ -33,13 +221,79 @@ export default function Footer() {
   const [isVisible, setIsVisible] = useState(false);
   const currentYear = new Date().getFullYear();
 
+  const footerRef = useRef(null);
+  const bgRef = useRef(null);
+  const ctaRef = useRef(null);
+  const gridRef = useRef(null);
+  const newsletterRef = useRef(null);
+
+  // ---------- SCROLL TO TOP VISIBILITY ----------
   useEffect(() => {
     const handleScroll = () => setIsVisible(window.scrollY > 300);
-    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // ---------- GSAP SCROLL PARALLAX ----------
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Background drifts slower than scroll → depth
+      gsap.to(bgRef.current, {
+        yPercent: 18,
+        ease: "none",
+        scrollTrigger: {
+          trigger: footerRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // CTA banner reveal
+      gsap.from(ctaRef.current, {
+        opacity: 0,
+        y: 40,
+        duration: 0.8,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ctaRef.current,
+          start: "top 85%",
+          toggleActions: "play none none none",
+        },
+      });
+
+      // Grid reveal
+      gsap.from(gridRef.current, {
+        opacity: 0,
+        y: 40,
+        duration: 0.8,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: gridRef.current,
+          start: "top 85%",
+          toggleActions: "play none none none",
+        },
+      });
+
+      // Newsletter reveal
+      gsap.from(newsletterRef.current, {
+        opacity: 0,
+        y: 40,
+        duration: 0.8,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: newsletterRef.current,
+          start: "top 85%",
+          toggleActions: "play none none none",
+        },
+      });
+    }, footerRef);
+
+    return () => ctx.revert();
+  }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -50,12 +304,14 @@ export default function Footer() {
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setSubscribeMsg({ type: "error", text: "Please enter a valid email address" });
+      setSubscribeMsg({
+        type: "error",
+        text: "Please enter a valid email address",
+      });
       return;
     }
 
     setSubscribing(true);
-
     const res = await subscribe({ name: name.trim(), email: email.trim() });
 
     if (res.success) {
@@ -76,641 +332,651 @@ export default function Footer() {
     setSubscribing(false);
   };
 
-  const footerLinks = {
-    company: [
-      { name: "Home", href: "/" },
-      { name: "About", href: "/about" },
-      { name: "Properties", href: "/properties" },
-      { name: "Services", href: "/services" },
-      { name: "Contact", href: "/contact" },
-    ],
-    resources: [{ name: "Blog", href: "/blogs" }],
-  };
-
-  const socialLinks = [
-    {
-      name: "Facebook",
-      href: "https://www.facebook.com/ChristopherRyanConsultantrealtor/",
-      hoverColor: TEAL,
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-        </svg>
-      ),
-    },
-    {
-      name: "Instagram",
-      href: "https://www.instagram.com/ChristopherRyanConsultantrealtor/",
-      hoverColor: GREEN,
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-        </svg>
-      ),
-    },
-    {
-      name: "YouTube",
-      href: "https://www.youtube.com/@ChristopherRyanConsultant",
-      hoverColor: "#FF0000",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-        </svg>
-      ),
-    },
-    {
-      name: "Pinterest",
-      href: "https://www.pinterest.com/ChristopherRyan_Consultant/",
-      hoverColor: "#E60023",
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0c-6.627 0-12 5.372-12 12 0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z" />
-        </svg>
-      ),
-    },
-  ];
-
   return (
     <footer
-      className="relative overflow-hidden text-white"
-      style={{ backgroundColor: DARK }}
+      ref={footerRef}
+      className="relative w-full overflow-hidden"
+      style={{ backgroundColor: INK, color: PAPER }}
     >
-      <div className="absolute inset-0 z-0">
+      {/* ============ BACKGROUND IMAGE LAYER ============ */}
+      <div
+        ref={bgRef}
+        className="absolute inset-0 z-0 will-change-transform"
+        style={{ height: "120%", top: "-10%" }}
+      >
+        <Image
+          src={BG_IMAGE}
+          alt=""
+          fill
+          unoptimized
+          className="object-cover"
+          sizes="100vw"
+        />
+        {/* Dark navy overlay so content stays legible */}
         <div
           className="absolute inset-0"
           style={{
-            background: `
-              linear-gradient(0deg, 
-                ${DARK} 0%, 
-                #061e1b 30%, 
-                #0a2824 55%, 
-                #0e3531 80%,
-                #134039 100%
-              )
-            `,
+            background: `linear-gradient(180deg, ${INK}E6 0%, ${INK}F2 50%, ${INK}FA 100%)`,
           }}
         />
-
+        {/* Subtle accent radial — single, quiet, top right */}
         <div
-          className="absolute inset-x-0 top-0 h-112.5 pointer-events-none"
+          className="absolute inset-0"
           style={{
-            background: `linear-gradient(180deg, ${MINT} 0%, ${MINT}B3 25%, ${MINT}66 55%, transparent 100%)`,
-          }}
-        />
-
-        <div
-          className="absolute -top-24 left-1/2 -translate-x-1/2 w-250 h-96 rounded-full pointer-events-none"
-          style={{
-            background: `radial-gradient(circle, ${MINT}CC 0%, ${MINT}66 45%, transparent 70%)`,
-            filter: "blur(60px)",
-          }}
-        />
-
-        <div
-          className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full pointer-events-none"
-          style={{
-            background: `radial-gradient(circle, ${GREEN}25 0%, transparent 70%)`,
-            filter: "blur(80px)",
-          }}
-        />
-
-        <div
-          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full pointer-events-none"
-          style={{
-            background: `radial-gradient(circle, ${MINT}15 0%, transparent 70%)`,
-            filter: "blur(80px)",
-          }}
-        />
-
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.035]"
-          style={{
-            backgroundImage: `url('/images/logo12.png')`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center center",
-            backgroundSize: "45% auto",
-            mixBlendMode: "screen",
-          }}
-        />
-
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, ${MINT} 1px, transparent 0)`,
-            backgroundSize: "48px 48px",
+            background: `radial-gradient(circle at 85% 5%, rgba(29,78,216,0.14) 0%, transparent 45%)`,
           }}
         />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ===== SECTION 1: LARGE CTA BANNER ===== */}
-        <div
-          className="relative mt-12 sm:mt-16 mb-16 rounded-3xl overflow-hidden hidden md:block"
-          style={{
-            background: `linear-gradient(135deg, ${TEAL} 0%, ${DARK} 70%, ${GREEN} 140%)`,
-            border: `1px solid ${MINT}20`,
-          }}
-        >
-          <div
-            className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-30 pointer-events-none"
-            style={{
-              background: `radial-gradient(circle, ${MINT} 0%, transparent 70%)`,
-            }}
-          />
-          <div
-            className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full opacity-20 pointer-events-none"
-            style={{
-              background: `radial-gradient(circle, ${GREEN} 0%, transparent 70%)`,
-            }}
-          />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* ===== SECTION 1: CTA BANNER ===== */}
+        <div ref={ctaRef} className="mt-12 sm:mt-16">
+          <TemplateLabel
+            title="Call-to-Action Banner"
+            description="Promotional banner above the footer. Editorial split — heading left, CTAs right. Hidden on mobile."
+            align="start"
+          >
+            <div
+              className="relative mb-16 hidden overflow-hidden rounded-3xl md:block"
+              style={{
+                border: `1px solid ${LINE}`,
+                background: `linear-gradient(135deg, rgba(29,78,216,0.12) 0%, rgba(10,26,47,0.40) 60%, rgba(30,58,138,0.20) 100%)`,
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+              }}
+            >
+              <div className="relative flex flex-col items-center justify-between gap-6 px-6 py-10 sm:px-10 lg:flex-row lg:px-16 sm:py-14 lg:py-16">
+                <div className="max-w-2xl text-center lg:text-left">
+                  {/* Eyebrow */}
+                  <div className="mb-4 flex items-center gap-2">
+                    <motion.span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: ACCENT_LT }}
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{
+                        duration: 2.4,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                    <span
+                      className="text-[12px] font-medium"
+                      style={{ color: ACCENT_LT }}
+                    >
+                      Let&apos;s start your journey
+                    </span>
+                  </div>
 
-          <div className="relative px-6 sm:px-10 lg:px-16 py-10 sm:py-14 lg:py-16 flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div className="text-center lg:text-left max-w-2xl">
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] sm:text-xs font-extrabold uppercase tracking-widest mb-3"
-                style={{
-                  backgroundColor: `${MINT}20`,
-                  color: MINT,
-                  border: `1px solid ${MINT}30`,
-                }}
-              >
-                <Sparkles size={12} />
-                Let's Start Your Journey
+                  {/* Headline — two-color split, no inline highlight box */}
+                  <h3
+                    className="text-[28px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-4xl lg:text-[44px]"
+                    style={{ color: "#FFFFFF" }}
+                  >
+                    Ready to find your{" "}
+                    <span style={{ color: ACCENT_LT }}>next chapter?</span>
+                  </h3>
+
+                  <p
+                    className="mt-4 max-w-md text-[14px] leading-[1.6] mx-auto lg:mx-0"
+                    style={{ color: "rgba(219,234,254,0.70)" }}
+                  >
+                    Whether you&apos;re downsizing, upgrading, or investing —
+                    we&apos;re here to guide you every step of the way.
+                  </p>
+                </div>
+
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
+                  <TemplateLabel
+                    title="Primary CTA"
+                    description="Main action button. Solid white fill, accent arrow chip, lift on hover."
+                    position="bottom"
+                  >
+                    <Link
+                      href="/contact"
+                      className="group inline-flex items-center gap-3 rounded-full py-3 pl-5 pr-2 text-[13px] font-semibold transition-transform duration-200 hover:-translate-y-0.5"
+                      style={{ backgroundColor: "#FFFFFF", color: INK }}
+                    >
+                      Book a consultation
+                      <span
+                        className="flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5"
+                        style={{ backgroundColor: ACCENT, color: "#FFFFFF" }}
+                      >
+                        <ArrowUpRight size={14} strokeWidth={2.5} />
+                      </span>
+                    </Link>
+                  </TemplateLabel>
+
+                  <Link
+                    href="/properties"
+                    className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-[13px] font-semibold transition-colors duration-200 hover:bg-white/10"
+                    style={{
+                      border: `1px solid ${LINE}`,
+                      color: "#FFFFFF",
+                    }}
+                  >
+                    Browse properties
+                  </Link>
+                </div>
               </div>
-              <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-[-0.02em]">
-                Ready to find your <br className="hidden sm:block" />
-                <span style={{ color: MINT }}>next chapter?</span>
-              </h3>
-              <p
-                className="mt-3 text-sm sm:text-base max-w-md mx-auto lg:mx-0"
-                style={{ color: `${MINT}CC` }}
-              >
-                Whether you're downsizing, upgrading, or investing — I'm here
-                to guide you every step of the way.
-              </p>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
-              <Link
-                href="https://calendar.app.google/zf9eeGFTRRb44AKU6"
-                className="group inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm font-extrabold transition-all duration-300 hover:scale-105 shadow-xl"
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  color: TEAL,
-                }}
-              >
-                Book a Consultation
-                <ArrowUpRight
-                  size={18}
-                  className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
-                />
-              </Link>
-              <Link
-                href="/properties"
-                className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-sm font-extrabold transition-all duration-300 hover:scale-105"
-                style={{
-                  backgroundColor: `${MINT}15`,
-                  color: MINT,
-                  border: `1px solid ${MINT}40`,
-                }}
-              >
-                Browse Properties
-              </Link>
-            </div>
-          </div>
+          </TemplateLabel>
         </div>
 
         {/* ===== SECTION 2: MAIN FOOTER GRID ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 mb-12 pt-12 md:pt-0">
-          {/* LEFT: Brand Column */}
-          <div className="lg:col-span-6 flex flex-col">
-            <div className="mb-6">
-              <Image
-                src="/images/navlogo12.png"
-                alt="Christopher Ryan Logo"
-                width={180}
-                height={55}
-                className="object-contain"
-                style={{ width: "auto", height: "auto" }}
-                priority
-              />
-            </div>
-
-            <p
-              className="text-sm sm:text-base leading-relaxed mb-6 max-w-md"
-              style={{ color: `${MINT}CC` }}
-            >
-              Helping Northern Virginia homeowners embrace their next chapter with
-              thoughtful guidance, local knowledge, and a real estate experience
-              built on trust, kindness, and connection.
-            </p>
-
-            {/* Contact Mini Cards */}
-            <div className="space-y-3 mb-6">
-              <a
-                href="tel:(571) 210-1933"
-                className="group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 hover:-translate-x-1"
-                style={{
-                  backgroundColor: `${MINT}08`,
-                  border: `1px solid ${MINT}15`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = `${TEAL}20`;
-                  e.currentTarget.style.borderColor = `${TEAL}40`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = `${MINT}08`;
-                  e.currentTarget.style.borderColor = `${MINT}15`;
-                }}
+        <div
+          ref={gridRef}
+          className="mb-12 grid grid-cols-1 gap-12 pt-8 lg:grid-cols-12 lg:gap-8 md:pt-0"
+        >
+          {/* ============ LEFT: BRAND COLUMN ============ */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="flex flex-col lg:col-span-6"
+          >
+            {/* Wordmark */}
+            <motion.div variants={itemVariants} className="mb-6">
+              <TemplateLabel
+                title="Brand wordmark"
+                description="Text wordmark + accent glyph tile. Replaces the old placeholder image logo with a clean, scale-proof mark."
+                align="start"
               >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                  style={{
-                    backgroundColor: `${TEAL}25`,
-                    color: MINT,
-                  }}
-                >
-                  <Phone size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: GREEN }}>
-                    Call Anytime
-                  </p>
-                  <p className="text-sm font-semibold text-white truncate">
-                    (571) 210-1933
-                  </p>
-                </div>
-              </a>
+                <Wordmark />
+              </TemplateLabel>
+            </motion.div>
 
-              <a
-                href="mailto:chris@christopherryanrealty.com"
-                className="group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 hover:-translate-x-1"
-                style={{
-                  backgroundColor: `${MINT}08`,
-                  border: `1px solid ${MINT}15`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = `${TEAL}20`;
-                  e.currentTarget.style.borderColor = `${TEAL}40`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = `${MINT}08`;
-                  e.currentTarget.style.borderColor = `${MINT}15`;
-                }}
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                  style={{
-                    backgroundColor: `${TEAL}25`,
-                    color: MINT,
-                  }}
-                >
-                  <Mail size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: GREEN }}>
-                    Email Me
-                  </p>
-                  <p className="text-sm font-semibold text-white truncate">
-                    chris@christopherryanrealty.com
-                  </p>
-                </div>
-              </a>
-
-              <div
-                className="flex items-center gap-3 p-3 rounded-xl"
-                style={{
-                  backgroundColor: `${MINT}08`,
-                  border: `1px solid ${MINT}15`,
-                }}
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                  style={{
-                    backgroundColor: `${TEAL}25`,
-                    color: MINT,
-                  }}
-                >
-                  <MapPin size={16} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wider font-bold" style={{ color: GREEN }}>
-                    Serving Area
-                  </p>
-                  <p className="text-sm font-semibold text-white truncate">
-                   Northern Virginia, USA
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Social */}
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-3" style={{ color: MINT }}>
-                Follow Along
-              </p>
-            </div>
-          </div>
-
-          {/* RIGHT: Links Columns */}
-          <div className="lg:col-span-6 grid grid-cols-2 gap-8 sm:gap-6">
-            {/* Column 1: Company */}
-            <div>
-              <h4
-                className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-extrabold mb-5"
-                style={{ color: "#FFFFFF" }}
-              >
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GREEN }} />
-                Company
-              </h4>
-              <ul className="space-y-3">
-                {footerLinks.company.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      href={link.href}
-                      className="group flex items-center gap-2 text-sm transition-all duration-300"
-                      style={{ color: `${MINT}B0` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = `${MINT}B0`)}
-                    >
-                      <ArrowUpRight
-                        size={12}
-                        className="opacity-0 group-hover:opacity-100 -rotate-45 group-hover:rotate-0 transition-all duration-300"
-                        style={{ color: GREEN }}
-                      />
-                      <span className="group-hover:translate-x-1 transition-transform duration-300">
-                        {link.name}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Column 2: Resources */}
-            <div>
-              <h4
-                className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-extrabold mb-5"
-                style={{ color: "#FFFFFF" }}
-              >
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: TEAL }} />
-                Resources
-              </h4>
-              <ul className="space-y-3">
-                {footerLinks.resources.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      href={link.href}
-                      className="group flex items-center gap-2 text-sm transition-all duration-300"
-                      style={{ color: `${MINT}B0` }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = `${MINT}B0`)}
-                    >
-                      <ArrowUpRight
-                        size={12}
-                        className="opacity-0 group-hover:opacity-100 -rotate-45 group-hover:rotate-0 transition-all duration-300"
-                        style={{ color: GREEN }}
-                      />
-                      <span className="group-hover:translate-x-1 transition-transform duration-300">
-                        {link.name}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-
-              <div
-                className="mt-6 p-4 rounded-xl"
-                style={{
-                  backgroundColor: `${MINT}08`,
-                  border: `1px solid ${MINT}15`,
-                }}
+            {/* Description */}
+            <motion.div variants={itemVariants} className="mb-8">
+              <TemplateLabel
+                title="Brand description"
+                description="Short company description, 2-3 sentences. Left aligned, weight 400, muted."
+                align="start"
               >
                 <p
-                  className="text-[10px] uppercase tracking-wider font-bold mb-1"
-                  style={{ color: GREEN }}
+                  className="max-w-md text-[14px] leading-[1.65] sm:text-[15px]"
+                  style={{ color: MUTED }}
                 >
-                  Quick Question?
+                  Helping clients embrace their next chapter with thoughtful
+                  guidance, local knowledge, and a real estate experience built
+                  on trust, kindness, and genuine connection.
                 </p>
-                <p className="text-sm mb-3" style={{ color: `${MINT}CC` }}>
-                  Let's talk about your real estate goals.
-                </p>
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-1.5 text-xs font-extrabold transition-all duration-300 hover:gap-2.5"
-                  style={{ color: MINT }}
+              </TemplateLabel>
+            </motion.div>
+
+            {/* Contact info */}
+            <motion.div variants={itemVariants} className="mb-8">
+              <TemplateLabel
+                title="Contact information"
+                description="Phone, email, and service area. Each row is a clickable link. Icon chip + label + value."
+                align="start"
+              >
+                <div className="flex flex-col gap-3">
+                  {/* Phone */}
+                  <a
+                    href="tel:+15550001234"
+                    className="group flex items-center gap-3 text-[14px] font-medium transition-colors hover:text-white"
+                    style={{ color: "rgba(219,234,254,0.85)" }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{
+                        backgroundColor: "rgba(29,78,216,0.20)",
+                        color: ACCENT_LT,
+                      }}
+                    >
+                      <Phone size={15} />
+                    </span>
+                    <span className="border-b border-transparent transition-colors group-hover:border-white/40">
+                      (555) 000-1234
+                    </span>
+                  </a>
+
+                  {/* Email */}
+                  <a
+                    href="mailto:hello@yourbrand.com"
+                    className="group flex items-center gap-3 text-[14px] font-medium transition-colors hover:text-white"
+                    style={{ color: "rgba(219,234,254,0.85)" }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{
+                        backgroundColor: "rgba(29,78,216,0.20)",
+                        color: ACCENT_LT,
+                      }}
+                    >
+                      <Mail size={15} />
+                    </span>
+                    <span className="border-b border-transparent transition-colors group-hover:border-white/40">
+                      hello@yourbrand.com
+                    </span>
+                  </a>
+
+                  {/* Address */}
+                  <div
+                    className="flex items-center gap-3 text-[14px] font-medium"
+                    style={{ color: "rgba(219,234,254,0.85)" }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{
+                        backgroundColor: "rgba(29,78,216,0.20)",
+                        color: ACCENT_LT,
+                      }}
+                    >
+                      <MapPin size={15} />
+                    </span>
+                    <span>Your City, State</span>
+                  </div>
+                </div>
+              </TemplateLabel>
+            </motion.div>
+
+            {/* Social */}
+            <motion.div variants={itemVariants}>
+              <TemplateLabel
+                title="Social links"
+                description="External social profiles. Replace '#' with your real profile URLs."
+                align="start"
+              >
+                <div>
+                  <p
+                    className="mb-3 text-[12px] font-medium"
+                    style={{ color: MUTED }}
+                  >
+                    Follow along
+                  </p>
+                  <div className="flex items-center gap-2.5">
+                    {socialLinks.map((social) => (
+                      <a
+                        key={social.name}
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={social.name}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors hover:bg-white/10"
+                        style={{
+                          borderColor: LINE,
+                          color: "rgba(219,234,254,0.85)",
+                        }}
+                      >
+                        {social.icon}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </TemplateLabel>
+            </motion.div>
+          </motion.div>
+
+          {/* ============ RIGHT: LINKS COLUMNS ============ */}
+          <div className="grid grid-cols-2 gap-8 sm:gap-6 lg:col-span-6">
+            {/* Company */}
+            <TemplateLabel
+              title="Navigation — Company"
+              description="Primary site navigation. 4-6 items. Animated underline on hover."
+              align="start"
+            >
+              <div>
+                <h4
+                  className="mb-5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.2em]"
+                  style={{ color: "#FFFFFF" }}
                 >
-                  Reach Out
-                  <ArrowUpRight size={12} />
-                </Link>
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: ACCENT_LT }}
+                  />
+                  Company
+                </h4>
+                <ul className="space-y-3">
+                  {footerLinks.company.map((link) => (
+                    <li key={link.name}>
+                      <Link
+                        href={link.href}
+                        className="group relative inline-flex items-center gap-2 text-[14px] font-medium transition-colors hover:text-white"
+                        style={{ color: MUTED }}
+                      >
+                        <ArrowUpRight
+                          size={12}
+                          className="-rotate-45 opacity-0 transition-all duration-300 group-hover:rotate-0 group-hover:opacity-100"
+                          style={{ color: ACCENT_LT }}
+                        />
+                        <span className="transition-transform duration-300 group-hover:translate-x-0.5">
+                          {link.name}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            </TemplateLabel>
+
+            {/* Resources */}
+            <TemplateLabel
+              title="Navigation — Resources"
+              description="Secondary navigation. Blog, guides, reports."
+              align="start"
+            >
+              <div>
+                <h4
+                  className="mb-5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.2em]"
+                  style={{ color: "#FFFFFF" }}
+                >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: ACCENT_DK }}
+                  />
+                  Resources
+                </h4>
+                <ul className="space-y-3">
+                  {footerLinks.resources.map((link) => (
+                    <li key={link.name}>
+                      <Link
+                        href={link.href}
+                        className="group relative inline-flex items-center gap-2 text-[14px] font-medium transition-colors hover:text-white"
+                        style={{ color: MUTED }}
+                      >
+                        <ArrowUpRight
+                          size={12}
+                          className="-rotate-45 opacity-0 transition-all duration-300 group-hover:rotate-0 group-hover:opacity-100"
+                          style={{ color: ACCENT_LT }}
+                        />
+                        <span className="transition-transform duration-300 group-hover:translate-x-0.5">
+                          {link.name}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Quick question callout */}
+                <TemplateLabel
+                  title="Quick contact prompt"
+                  description="Small callout encouraging users to reach out."
+                  position="bottom"
+                  align="start"
+                >
+                  <div
+                    className="mt-6 rounded-xl p-4"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.04)",
+                      border: `1px solid ${LINE}`,
+                    }}
+                  >
+                    <p
+                      className="mb-1 text-[11px] font-semibold"
+                      style={{ color: ACCENT_LT }}
+                    >
+                      Quick question?
+                    </p>
+                    <p
+                      className="mb-3 text-[13px]"
+                      style={{ color: "rgba(219,234,254,0.75)" }}
+                    >
+                      Let&apos;s talk about your real estate goals.
+                    </p>
+                    <Link
+                      href="/contact"
+                      className="group inline-flex items-center gap-1.5 text-[12px] font-semibold transition-all duration-300 hover:gap-2.5"
+                      style={{ color: ACCENT_LT }}
+                    >
+                      Reach out
+                      <ArrowUpRight size={12} />
+                    </Link>
+                  </div>
+                </TemplateLabel>
+              </div>
+            </TemplateLabel>
           </div>
         </div>
 
-        {/* ===== SECTION 3: NEWSLETTER CARD ===== */}
-        <div
-          className="relative rounded-2xl overflow-hidden mb-12"
-          style={{
-            backgroundColor: `${MINT}08`,
-            border: `1px solid ${MINT}20`,
-          }}
-        >
-          <div
-            className="absolute top-0 left-0 w-full h-0.5"
-            style={{
-              background: `linear-gradient(to right, transparent, ${TEAL}, ${GREEN}, transparent)`,
-            }}
-          />
-          <div
-            className="absolute -right-20 -top-20 w-64 h-64 rounded-full opacity-20 pointer-events-none"
-            style={{
-              background: `radial-gradient(circle, ${TEAL} 0%, transparent 70%)`,
-            }}
-          />
+        {/* ===== SECTION 3: NEWSLETTER ===== */}
+        <div ref={newsletterRef}>
+          <TemplateLabel
+            title="Newsletter signup"
+            description="Email subscription form. Collects name + email, posts to your API. Success / error feedback inline."
+            align="start"
+          >
+            <div
+              className="relative mb-12 overflow-hidden rounded-2xl"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.04)",
+                border: `1px solid ${LINE}`,
+              }}
+            >
+              {/* Top accent line */}
+              <div
+                className="absolute top-0 left-0 h-px w-full"
+                style={{
+                  background: `linear-gradient(to right, transparent, ${ACCENT_LT}, transparent)`,
+                }}
+              />
 
-          <div className="relative px-5 sm:px-8 lg:px-12 py-6 sm:py-8 flex flex-col md:flex-row items-start md:items-center gap-5">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Send size={16} style={{ color: GREEN }} />
-                <p className="text-[10px] uppercase tracking-[0.2em] font-extrabold" style={{ color: GREEN }}>
-                  Newsletter
-                </p>
-              </div>
-              <h4 className="text-lg sm:text-xl font-extrabold mb-1" style={{ color: "#FFFFFF" }}>
-                Stay Updated with Northern Virginia Real Estate
-              </h4>
-              <p className="text-xs sm:text-sm" style={{ color: `${MINT}B0` }}>
-                Get market insights, new listings, and tips delivered monthly.
-              </p>
-            </div>
-
-            <div className="w-full md:w-auto md:min-w-105">
-              <form onSubmit={handleSubscribe} className="space-y-2.5">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    placeholder="Your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={subscribing}
-                    required
-                    minLength={2}
-                    maxLength={100}
-                    className="flex-1 sm:w-44 rounded-full py-3 px-5 text-sm text-white placeholder-white/40 focus:outline-none transition-all duration-300 disabled:opacity-50"
-                    style={{
-                      backgroundColor: `${MINT}10`,
-                      border: `1px solid ${MINT}25`,
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = TEAL;
-                      e.currentTarget.style.boxShadow = `0 0 0 3px ${TEAL}25`;
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = `${MINT}25`;
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                  />
-
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={subscribing}
-                    required
-                    maxLength={200}
-                    className="flex-1 sm:w-52 rounded-full py-3 px-5 text-sm text-white placeholder-white/40 focus:outline-none transition-all duration-300 disabled:opacity-50"
-                    style={{
-                      backgroundColor: `${MINT}10`,
-                      border: `1px solid ${MINT}25`,
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = TEAL;
-                      e.currentTarget.style.boxShadow = `0 0 0 3px ${TEAL}25`;
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = `${MINT}25`;
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={subscribing}
-                    className="shrink-0 px-5 sm:px-6 py-3 rounded-full text-sm font-extrabold text-white transition-all duration-300 hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-                    style={{
-                      background: `linear-gradient(135deg, ${TEAL}, ${GREEN})`,
-                      boxShadow: `0 6px 20px ${TEAL}50`,
-                    }}
-                    aria-label="Subscribe"
+              <div className="relative flex flex-col items-start gap-5 px-5 py-6 sm:px-8 lg:flex-row lg:items-center md:px-12 sm:py-8">
+                {/* Copy */}
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Send size={15} style={{ color: ACCENT_LT }} />
+                    <p
+                      className="text-[11px] font-semibold uppercase tracking-[0.2em]"
+                      style={{ color: ACCENT_LT }}
+                    >
+                      Newsletter
+                    </p>
+                  </div>
+                  <h4
+                    className="mb-1 text-[18px] font-semibold sm:text-[20px]"
+                    style={{ color: "#FFFFFF" }}
                   >
-                    {subscribing ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        Subscribing...
-                      </>
-                    ) : (
-                      <>
-                        Subscribe
-                        <ArrowUpRight size={14} />
-                      </>
-                    )}
-                  </button>
+                    Stay updated with market insights
+                  </h4>
+                  <p
+                    className="text-[13px] sm:text-[14px]"
+                    style={{ color: MUTED }}
+                  >
+                    Get market insights, new listings, and tips delivered monthly.
+                  </p>
                 </div>
 
-                {subscribeMsg && (
-                  <div
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium"
-                    style={{
-                      backgroundColor:
-                        subscribeMsg.type === "success"
-                          ? `${GREEN}15`
-                          : "rgba(239, 68, 68, 0.12)",
-                      border: `1px solid ${
-                        subscribeMsg.type === "success"
-                          ? `${GREEN}40`
-                          : "rgba(239, 68, 68, 0.3)"
-                      }`,
-                      color: subscribeMsg.type === "success" ? GREEN : "#fca5a5",
-                    }}
-                  >
-                    {subscribeMsg.type === "success" ? (
-                      <CheckCircle2 size={13} className="shrink-0" />
-                    ) : (
-                      <AlertCircle size={13} className="shrink-0" />
+                {/* Form */}
+                <div className="w-full md:w-auto md:min-w-440px">
+                  <form onSubmit={handleSubscribe} className="space-y-2.5">
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        placeholder="Your name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        disabled={subscribing}
+                        required
+                        minLength={2}
+                        maxLength={100}
+                        className="flex-1 rounded-full py-3 px-5 text-sm transition-all duration-300 focus:outline-none disabled:opacity-50 sm:w-44"
+                        style={{
+                          backgroundColor: "rgba(255,255,255,0.06)",
+                          border: `1px solid ${LINE}`,
+                          color: "#FFFFFF",
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = ACCENT_LT;
+                          e.currentTarget.style.boxShadow = `0 0 0 3px rgba(147,197,253,0.20)`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = LINE;
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      />
+
+                      <input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={subscribing}
+                        required
+                        maxLength={200}
+                        className="flex-1 rounded-full py-3 px-5 text-sm transition-all duration-300 focus:outline-none disabled:opacity-50 sm:w-52"
+                        style={{
+                          backgroundColor: "rgba(255,255,255,0.06)",
+                          border: `1px solid ${LINE}`,
+                          color: "#FFFFFF",
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = ACCENT_LT;
+                          e.currentTarget.style.boxShadow = `0 0 0 3px rgba(147,197,253,0.20)`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = LINE;
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={subscribing}
+                        className="shrink-0 flex items-center justify-center gap-2 rounded-full px-5 py-3 text-[13px] font-semibold transition-transform duration-200 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                        style={{
+                          backgroundColor: ACCENT,
+                          color: "#FFFFFF",
+                          boxShadow: `0 8px 24px rgba(29,78,216,0.40)`,
+                        }}
+                        aria-label="Subscribe"
+                      >
+                        {subscribing ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Subscribing...
+                          </>
+                        ) : (
+                          <>
+                            Subscribe
+                            <ArrowUpRight size={14} />
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {subscribeMsg && (
+                      <div
+                        className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium"
+                        style={{
+                          backgroundColor:
+                            subscribeMsg.type === "success"
+                              ? "rgba(29,78,216,0.15)"
+                              : "rgba(239, 68, 68, 0.12)",
+                          border: `1px solid ${
+                            subscribeMsg.type === "success"
+                              ? "rgba(29,78,216,0.40)"
+                              : "rgba(239, 68, 68, 0.30)"
+                          }`,
+                          color:
+                            subscribeMsg.type === "success"
+                              ? ACCENT_LT
+                              : "#fca5a5",
+                        }}
+                      >
+                        {subscribeMsg.type === "success" ? (
+                          <CheckCircle2 size={13} className="shrink-0" />
+                        ) : (
+                          <AlertCircle size={13} className="shrink-0" />
+                        )}
+                        {subscribeMsg.text}
+                      </div>
                     )}
-                    {subscribeMsg.text}
-                  </div>
-                )}
-              </form>
+                  </form>
+                </div>
+              </div>
             </div>
-          </div>
+          </TemplateLabel>
         </div>
 
-        {/* ===== SECTION 4: FOOTER LOGO & DISCLAIMER ===== */}
-        <div className="pt-8 pb-8 flex flex-col justify-center items-center gap-6 text-center max-w-5xl mx-auto">
-          <Image
-            src="/images/footlogo1.jpeg"
-            alt="Footer Logo"
-            width={200}
-            height={200}
-            className="object-contain"
-            style={{ width: "auto", height: "auto" }}
-            priority={false}
-          />
-          <p
-            className="text-[11px] leading-[1.7] sm:text-xs text-center max-w-4xl"
-            style={{ color: `${MINT}90` }}
+        {/* ===== SECTION 4: DISCLAIMER ===== */}
+        <div className="flex max-w-5xl flex-col items-center justify-center gap-6 px-4 pb-8 pt-8 text-center">
+          <TemplateLabel
+            title="Legal disclaimer"
+            description="Required legal text for real estate sites — IDX disclosure, MLS participation, equal housing notice."
+            position="top"
+            align="center"
           >
-            © 2026 Bright MLS. All rights reserved. The data relating to real estate for sale on this website appears in part through the Bright MLS Internet Data Exchange (IDX) program, a voluntary cooperative exchange of property listing data between licensed real estate brokerage firms in which Casey Margenau Fine Homes and Estates participates, and is provided by Bright MLS through a licensing agreement.
-            <br />
-            Listings held by brokerage firms other than Casey Margenau Fine Homes and Estates are marked with the IDX icon and include the listing broker name. Information is provided for the personal, non-commercial use of consumers and may not be used for any purpose other than identifying properties of interest. Property information is deemed reliable but not guaranteed and should be independently verified. Listings may change or be withdrawn without notice and may include errors, omissions, or status updates. Bright MLS compiles listing data from multiple sources and does not guarantee accuracy, including property status or historical information. Some listings may not appear due to seller instruction, brokerage participation, or MLS reporting limitations. Equal Housing Opportunity.
-          </p>
-        </div>
-
-        {/* ===== SECTION 5: FINAL COPYRIGHT LINE — "Leatonic" is now a clickable link ===== */}
-        <div
-          className="pt-6 pb-4 flex flex-col items-center"
-          style={{ borderTop: `1px solid ${MINT}15` }}
-        >
-          <p
-            className="text-xs sm:text-sm transition-colors text-center"
-            style={{ color: `${MINT}80` }}
-          >
-            &copy; {currentYear}{" "}
-            <a
-              href="https://leatonic.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium transition-colors duration-300 hover:underline"
-              style={{ color: MINT }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = GREEN)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = MINT)}
+            <p
+              className="max-w-4xl text-center text-[11px] leading-[1.7] sm:text-xs"
+              style={{ color: "rgba(219,234,254,0.55)" }}
             >
-              Leatonic
-            </a>
-            . All rights reserved.
-          </p>
+              &copy; {currentYear} Your Brand Name. All rights reserved. The data
+              relating to real estate for sale on this website appears in part
+              through the MLS Internet Data Exchange (IDX) program, a voluntary
+              cooperative exchange of property listing data between licensed real
+              estate brokerage firms in which Your Brand Name participates, and is
+              provided by the MLS through a licensing agreement.
+              <br />
+              Listings held by brokerage firms other than Your Brand Name are
+              marked with the IDX icon and include the listing broker name.
+              Information is provided for the personal, non-commercial use of
+              consumers and may not be used for any purpose other than identifying
+              properties of interest. Property information is deemed reliable but
+              not guaranteed and should be independently verified. Listings may
+              change or be withdrawn without notice and may include errors,
+              omissions, or status updates. Equal Housing Opportunity.
+            </p>
+          </TemplateLabel>
+        </div>
+
+        {/* ===== SECTION 5: COPYRIGHT ===== */}
+        <div
+          className="flex flex-col items-center pt-6 pb-4"
+          style={{ borderTop: `1px solid ${LINE}` }}
+        >
+          <TemplateLabel
+            title="Copyright notice"
+            description="Year + brand name + 'All rights reserved'. 'Leatonic' link credits the template developer."
+            position="top"
+            align="center"
+          >
+            <p
+              className="text-center text-xs transition-colors sm:text-sm"
+              style={{ color: "rgba(219,234,254,0.50)" }}
+            >
+              &copy; {currentYear}{" "}
+              <span style={{ color: "#FFFFFF" }}>Your Brand Name</span>. All
+              rights reserved. Built by{" "}
+              <a
+                href="https://leatonic.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium transition-colors duration-300 hover:underline"
+                style={{ color: ACCENT_LT }}
+              >
+                Leatonic
+              </a>
+              .
+            </p>
+          </TemplateLabel>
         </div>
       </div>
 
-      {/* SCROLL TO TOP BUTTON */}
-      <button
-        onClick={scrollToTop}
-        className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full text-white flex items-center justify-center transition-all duration-300 hover:scale-110 ${
-          isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4 pointer-events-none"
-        }`}
-        style={{
-          background: `linear-gradient(135deg, ${TEAL}, ${GREEN})`,
-          boxShadow: `0 8px 24px ${TEAL}60`,
-        }}
-        aria-label="Scroll to top"
+      {/* ===== SCROLL TO TOP ===== */}
+      <TemplateLabel
+        title="Scroll to top"
+        description="Floating button (bottom-right). Appears after 300px scroll. Smooth-scrolls to top."
+        position="left"
       >
-        <ArrowUp size={20} strokeWidth={2.5} />
-      </button>
+        <button
+          onClick={scrollToTop}
+          className={`fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full transition-all duration-300 hover:scale-110 ${
+            isVisible
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-4 opacity-0"
+          }`}
+          style={{
+            backgroundColor: ACCENT,
+            color: "#FFFFFF",
+            boxShadow: `0 8px 24px rgba(29,78,216,0.50)`,
+          }}
+          aria-label="Scroll to top"
+        >
+          <ArrowUp size={20} strokeWidth={2.5} />
+        </button>
+      </TemplateLabel>
     </footer>
   );
 }

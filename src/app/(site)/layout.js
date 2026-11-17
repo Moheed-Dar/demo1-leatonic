@@ -1,16 +1,16 @@
-import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 export const metadata = {
-  title: "Christopher Ryan Real Estate - Your Trusted Real Estate Partner",
-  description: "Premium Real Estate Services",
+  title: "Leatonic - Template",
+  description: "A modern real estate template for showcasing properties, listings, and agent services.",
 };
 
 export default function SiteLayout({ children }) {
   return (
     <>
       <Navbar />
-      <main>{children}</main>
+      <main className="min-h-screen">{children}</main>
       <Footer />
     </>
   );

@@ -1,1269 +1,3 @@
-// "use client";
-
-// import { useEffect, useRef } from "react";
-// import Link from "next/link";
-// import Image from "next/image";
-// import {
-//   ShieldCheck,
-//   BarChart3,
-//   Target,
-//   Check,
-//   ArrowRight,
-//   BookOpen,
-//   Download,
-//   FileText,
-//   Users,
-//   TrendingUp,
-//   Home,
-//   Search,
-//   Scale,
-//   Star,
-// } from "lucide-react";
-// import gsap from "gsap";
-// import { ScrollTrigger } from "gsap/ScrollTrigger";
-// import GuideForm from "@/components/forms/GuideForm";
-
-// gsap.registerPlugin(ScrollTrigger);
-
-// // ============================================
-// // SERVICES DATA (Updated Colors)
-// // ============================================
-// const services = [
-//   {
-//     icon: ShieldCheck,
-//     title: "Buyer & Seller Representation",
-//     description:
-//       "Expert legal and strategic representation through every stage of your property transaction. We protect your interests from first offer to final closing.",
-//     features: [
-//       "Skilled negotiation on your behalf",
-//       "Legal documentation & compliance",
-//       "Market-driven pricing strategy",
-//       "End-to-end closing support",
-//     ],
-//   },
-//   {
-//     icon: BarChart3,
-//     title: "Home Valuations",
-//     description:
-//       "Accurate, data-driven property valuations backed by comprehensive market analysis. Know the true worth of your asset before making any decision.",
-//     features: [
-//       "Comparative market analysis (CMA)",
-//       "Current market trend evaluation",
-//       "Detailed valuation report",
-//       "Fair & transparent pricing",
-//     ],
-//   },
-//   {
-//     icon: Target,
-//     title: "Investment Advisory",
-//     description:
-//       "Strategic real estate investment guidance to help you identify high-return opportunities and build a profitable property portfolio with managed risk.",
-//     features: [
-//       "Portfolio diversification strategy",
-//       "ROI projection & analysis",
-//       "Emerging market identification",
-//       "Risk assessment & mitigation",
-//     ],
-//   },
-// ];
-
-// // ============================================
-// // GUIDE DATA (Updated Colors)
-// // ============================================
-// const guides = [
-//   {
-//     type: "buyer",
-//     title: "Buyer's Guide",
-//     description:
-//       "Everything you need to know before purchasing your dream property. A step-by-step roadmap for first-time and experienced buyers.",
-//     contents: [
-//       "Complete buying process explained",
-//       "Financing options & mortgage tips",
-//       "Property inspection checklist",
-//       "Common mistakes to avoid",
-//       "Negotiation strategies that work",
-//     ],
-//     icon: Home,
-//   },
-//   {
-//     type: "seller",
-//     title: "Seller's Guide",
-//     description:
-//       "Maximize your property's value with our proven selling strategies. Learn how to attract the right buyers and close at the best price.",
-//     contents: [
-//       "How to price your property right",
-//       "Home staging & preparation tips",
-//       "Marketing strategies that sell",
-//       "Negotiation tactics for sellers",
-//       "Legal requirements simplified",
-//     ],
-//     icon: TrendingUp,
-//   },
-// ];
-
-// // ============================================
-// // MAIN PAGE
-// // ============================================
-// export default function ServicesPage() {
-//   const pageRef = useRef(null);
-//   const servicesRef = useRef(null);
-//   const guidesRef = useRef(null);
-
-//   // ---- GSAP Animations ----
-//   useEffect(() => {
-//     const ctx = gsap.context(() => {
-//       // Hero
-//       gsap.fromTo(
-//         ".hero-title",
-//         { opacity: 0, y: 30 },
-//         { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }
-//       );
-//       gsap.fromTo(
-//         ".hero-sub",
-//         { opacity: 0, y: 20 },
-//         { opacity: 1, y: 0, duration: 0.6, ease: "power2.out", delay: 0.2 }
-//       );
-//       gsap.fromTo(
-//         ".hero-line",
-//         { scaleX: 0 },
-//         { scaleX: 1, duration: 0.8, ease: "power2.out", delay: 0.1 }
-//       );
-
-//       // Service Cards
-//       gsap.fromTo(
-//         ".service-card",
-//         { opacity: 0, y: 40 },
-//         {
-//           opacity: 1,
-//           y: 0,
-//           duration: 0.6,
-//           stagger: 0.15,
-//           ease: "power2.out",
-//           scrollTrigger: {
-//             trigger: servicesRef.current,
-//             start: "top 85%",
-//           },
-//         }
-//       );
-
-//       // Guide Cards
-//       gsap.fromTo(
-//         ".guide-card",
-//         { opacity: 0, y: 40 },
-//         {
-//           opacity: 1,
-//           y: 0,
-//           duration: 0.6,
-//           stagger: 0.15,
-//           ease: "power2.out",
-//           scrollTrigger: {
-//             trigger: guidesRef.current,
-//             start: "top 85%",
-//           },
-//         }
-//       );
-//     }, pageRef);
-
-//     return () => ctx.revert();
-//   }, []);
-
-//   return (
-//     <div
-//       ref={pageRef}
-//       className="min-h-screen bg-[#301143] relative overflow-x-hidden"
-//     >
-//       {/* ===== LIGHTER BACKGROUND EFFECTS + WATERMARK ===== */}
-//       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-//         <div
-//           className="absolute inset-0 opacity-[0.04]"
-//           style={{
-//             backgroundImage:
-//               "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-//             backgroundSize: "40px 40px",
-//           }}
-//         />
-//         {/* Watermark logo (subtle) */}
-//         <div className="absolute inset-0 flex items-center justify-center opacity-[0.04]">
-//           <div className="relative w-75 h-75 sm:w-100 sm:h-100">
-//             <Image
-//               src="/images/logo.png"
-//               alt="Watermark"
-//               fill
-//               className="object-contain"
-//               unoptimized
-//             />
-//           </div>
-//         </div>
-//         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(250,174,98,0.10)_0%,transparent_40%)]" />
-//         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(250,174,98,0.08)_0%,transparent_50%)]" />
-//       </div>
-
-//       {/* ===== HERO SECTION ===== */}
-//       <div className="relative z-10 mt-20">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
-//           <div className="max-w-3xl mx-auto">
-//             <div className="hero-line flex items-center justify-center gap-3 mb-6 origin-left">
-//               <div className="w-8 h-px bg-linear-to-r from-[#FAAE62] to-transparent" />
-//               <span className="text-[10px] font-bold text-[#FAAE62] uppercase tracking-[0.3em]">
-//                 What We Offer
-//               </span>
-//               <div className="w-8 h-px bg-linear-to-l from-[#FAAE62] to-transparent" />
-//             </div>
-
-//             <h1 className="hero-title text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.1] mb-6 font-bold">
-//               Our{" "}
-//               <span className="text-[#FAAE62]">
-//                 Services
-//               </span>
-//             </h1>
-
-//             <p className="hero-sub text-white/70 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto">
-//               Comprehensive real estate solutions tailored to your needs. From
-//               finding your dream home to maximizing your investment returns.
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ===== SERVICES SECTION ===== */}
-//       <div ref={servicesRef} className="relative z-10">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-//           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-//             {services.map((service, index) => {
-//               const Icon = service.icon;
-//               return (
-//                 <div
-//                   key={index}
-//                   className="service-card group relative bg-[#4a1d60] rounded-2xl p-7 sm:p-8 border border-white/10 hover:border-[#FAAE62]/40 transition-all duration-500 overflow-hidden"
-//                 >
-//                   {/* Subtle glow */}
-//                   <div
-//                     className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-//                     style={{ backgroundColor: "#FAAE62" }}
-//                   />
-
-//                   <div
-//                     className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-[#FAAE62]/20 bg-[#FAAE62]/10 transition-all duration-500 group-hover:scale-110"
-//                   >
-//                     <Icon
-//                       size={24}
-//                       className="text-[#FAAE62] transition-transform duration-500 group-hover:scale-110"
-//                     />
-//                   </div>
-
-//                   <h3 className="relative text-xl text-white mb-3 leading-tight font-semibold">
-//                     {service.title}
-//                   </h3>
-
-//                   <p className="relative text-white/70 text-sm leading-relaxed mb-6">
-//                     {service.description}
-//                   </p>
-
-//                   <ul className="relative space-y-2.5">
-//                     {service.features.map((feature, i) => (
-//                       <li
-//                         key={i}
-//                         className="flex items-start gap-2.5 text-sm text-white/70"
-//                       >
-//                         <div
-//                           className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 border border-[#FAAE62]/20 bg-[#FAAE62]/10 transition-colors duration-300"
-//                         >
-//                           <Check
-//                             size={10}
-//                             className="text-[#FAAE62]"
-//                           />
-//                         </div>
-//                         <span>{feature}</span>
-//                       </li>
-//                     ))}
-//                   </ul>
-
-//                   <div className="relative mt-7 pt-5 border-t border-white/10">
-//                     <Link
-//                       href="/contact"
-//                       className="inline-flex items-center gap-2 text-sm font-semibold text-[#FAAE62] transition-all duration-300 group/link"
-//                     >
-//                       Learn More
-//                       <ArrowRight
-//                         size={14}
-//                         className="transition-transform duration-300 group-hover/link:translate-x-1"
-//                       />
-//                     </Link>
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ===== GUIDES DOWNLOAD SECTION ===== */}
-//       <div ref={guidesRef} className="relative z-10">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-//           <div className="text-center mb-14">
-//             <div className="flex items-center justify-center gap-3 mb-5">
-//               <div className="w-8 h-px bg-linear-to-r from-[#FAAE62] to-transparent" />
-//               <span className="text-[10px] font-bold text-[#FAAE62] uppercase tracking-[0.3em]">
-//                 Free Resources
-//               </span>
-//               <div className="w-8 h-px bg-linear-to-l from-[#FAAE62] to-transparent" />
-//             </div>
-
-//             <h2 className="text-3xl sm:text-4xl text-white tracking-tight leading-[1.1] mb-4 font-bold">
-//               Download Our{" "}
-//               <span className="text-[#FAAE62]">
-//                 Free Guides
-//               </span>
-//             </h2>
-
-//             <p className="text-white/70 text-base max-w-xl mx-auto">
-//               Comprehensive resources to help you make informed real estate
-//               decisions. Download instantly after filling a quick form.
-//             </p>
-//           </div>
-
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-//             {guides.map((guide) => {
-//               const GuideIcon = guide.icon;
-//               return (
-//                 <div
-//                   key={guide.type}
-//                   className="guide-card group relative bg-[#4a1d60] rounded-2xl border border-white/10 hover:border-[#FAAE62]/40 transition-all duration-500"
-//                 >
-//                   {/* Subtle glow */}
-//                   <div
-//                     className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-//                     style={{ backgroundColor: "#FAAE62" }}
-//                   />
-
-//                   <div className="relative p-7 sm:p-8">
-//                     <div className="flex items-start justify-between mb-5">
-//                       <div
-//                         className="w-12 h-12 rounded-xl flex items-center justify-center border border-[#FAAE62]/20 bg-[#FAAE62]/10 transition-all duration-500 group-hover:scale-110"
-//                       >
-//                         <GuideIcon size={22} className="text-[#FAAE62]" />
-//                       </div>
-//                       <span
-//                         className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-[#FAAE62]/20 bg-[#FAAE62]/10 text-[#FAAE62]"
-//                       >
-//                         Free PDF
-//                       </span>
-//                     </div>
-
-//                     <h3 className="text-xl text-white mb-2 font-semibold">
-//                       {guide.title}
-//                     </h3>
-//                     <p className="text-white/70 text-sm leading-relaxed mb-5">
-//                       {guide.description}
-//                     </p>
-
-//                     <ul className="space-y-2 mb-7">
-//                       {guide.contents.map((item, i) => (
-//                         <li
-//                           key={i}
-//                           className="flex items-center gap-2.5 text-xs text-white/60"
-//                         >
-//                           <div
-//                             className="w-1 h-1 rounded-full shrink-0 bg-[#FAAE62]"
-//                           />
-//                           {item}
-//                         </li>
-//                       ))}
-//                     </ul>
-
-//                     <GuideForm guideType={guide.type} />
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-
-//           <div className="text-center mt-10">
-//             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-full">
-//               <ShieldCheck size={14} className="text-[#FAAE62]/60" />
-//               <span className="text-xs text-white/50">
-//                 Your information is secure. We never share your data.
-//               </span>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// "use client";
-
-// import { useEffect, useRef } from "react";
-// import Link from "next/link";
-// import Image from "next/image";
-// import {
-//   ShieldCheck,
-//   BarChart3,
-//   Target,
-//   Check,
-//   ArrowRight,
-//   BookOpen,
-//   Download,
-//   FileText,
-//   Users,
-//   TrendingUp,
-//   Home,
-//   Search,
-//   Scale,
-//   Star,
-// } from "lucide-react";
-// import gsap from "gsap";
-// import { ScrollTrigger } from "gsap/ScrollTrigger";
-// import GuideForm from "@/components/forms/GuideForm";
-
-// gsap.registerPlugin(ScrollTrigger);
-
-// // ============================================
-// // SERVICES DATA
-// // ============================================
-// const services = [
-//   {
-//     icon: ShieldCheck,
-//     title: "Buyer & Seller Representation",
-//     description:
-//       "Expert legal and strategic representation through every stage of your property transaction. We protect your interests from first offer to final closing.",
-//     features: [
-//       "Skilled negotiation on your behalf",
-//       "Legal documentation & compliance",
-//       "Market-driven pricing strategy",
-//       "End-to-end closing support",
-//     ],
-//   },
-//   {
-//     icon: BarChart3,
-//     title: "Home Valuations",
-//     description:
-//       "Accurate, data-driven property valuations backed by comprehensive market analysis. Know the true worth of your asset before making any decision.",
-//     features: [
-//       "Comparative market analysis (CMA)",
-//       "Current market trend evaluation",
-//       "Detailed valuation report",
-//       "Fair & transparent pricing",
-//     ],
-//   },
-//   {
-//     icon: Target,
-//     title: "Investment Advisory",
-//     description:
-//       "Strategic real estate investment guidance to help you identify high-return opportunities and build a profitable property portfolio with managed risk.",
-//     features: [
-//       "Portfolio diversification strategy",
-//       "ROI projection & analysis",
-//       "Emerging market identification",
-//       "Risk assessment & mitigation",
-//     ],
-//   },
-// ];
-
-// // ============================================
-// // GUIDE DATA
-// // ============================================
-// const guides = [
-//   {
-//     type: "buyer",
-//     title: "Buyer's Guide",
-//     description:
-//       "Everything you need to know before purchasing your dream property. A step-by-step roadmap for first-time and experienced buyers.",
-//     contents: [
-//       "Complete buying process explained",
-//       "Financing options & mortgage tips",
-//       "Property inspection checklist",
-//       "Common mistakes to avoid",
-//       "Negotiation strategies that work",
-//     ],
-//     icon: Home,
-//   },
-//   {
-//     type: "seller",
-//     title: "Seller's Guide",
-//     description:
-//       "Maximize your property's value with our proven selling strategies. Learn how to attract the right buyers and close at the best price.",
-//     contents: [
-//       "How to price your property right",
-//       "Home staging & preparation tips",
-//       "Marketing strategies that sell",
-//       "Negotiation tactics for sellers",
-//       "Legal requirements simplified",
-//     ],
-//     icon: TrendingUp,
-//   },
-// ];
-
-// // ============================================
-// // MAIN PAGE
-// // ============================================
-// export default function ServicesPage() {
-//   const pageRef = useRef(null);
-//   const servicesRef = useRef(null);
-//   const guidesRef = useRef(null);
-
-//   // ---- GSAP Animations ----
-//   useEffect(() => {
-//     const ctx = gsap.context(() => {
-//       // Hero
-//       gsap.fromTo(
-//         ".hero-title",
-//         { opacity: 0, y: 30 },
-//         { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }
-//       );
-//       gsap.fromTo(
-//         ".hero-sub",
-//         { opacity: 0, y: 20 },
-//         { opacity: 1, y: 0, duration: 0.6, ease: "power2.out", delay: 0.2 }
-//       );
-//       gsap.fromTo(
-//         ".hero-line",
-//         { scaleX: 0 },
-//         { scaleX: 1, duration: 0.8, ease: "power2.out", delay: 0.1 }
-//       );
-
-//       // Service Cards
-//       gsap.fromTo(
-//         ".service-card",
-//         { opacity: 0, y: 40 },
-//         {
-//           opacity: 1,
-//           y: 0,
-//           duration: 0.6,
-//           stagger: 0.15,
-//           ease: "power2.out",
-//           scrollTrigger: {
-//             trigger: servicesRef.current,
-//             start: "top 85%",
-//           },
-//         }
-//       );
-
-//       // Guide Cards
-//       gsap.fromTo(
-//         ".guide-card",
-//         { opacity: 0, y: 40 },
-//         {
-//           opacity: 1,
-//           y: 0,
-//           duration: 0.6,
-//           stagger: 0.15,
-//           ease: "power2.out",
-//           scrollTrigger: {
-//             trigger: guidesRef.current,
-//             start: "top 85%",
-//           },
-//         }
-//       );
-//     }, pageRef);
-
-//     return () => ctx.revert();
-//   }, []);
-
-//   return (
-//     <div
-//       ref={pageRef}
-//       className="min-h-screen bg-[#301143] relative overflow-x-hidden"
-//     >
-//       {/* ===== LIGHTER BACKGROUND EFFECTS + WATERMARK ===== */}
-//       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-//         <div
-//           className="absolute inset-0 opacity-[0.04]"
-//           style={{
-//             backgroundImage:
-//               "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-//             backgroundSize: "40px 40px",
-//           }}
-//         />
-//         {/* Watermark logo (subtle) */}
-//         <div className="absolute inset-0 flex items-center justify-center opacity-[0.04]">
-//           <div className="relative w-75 h-75 sm:w-100 sm:h-100">
-//             <Image
-//               src="/images/logo3.png"
-//               alt="Watermark"
-//               fill
-//               className="object-contain"
-//               unoptimized
-//             />
-//           </div>
-//         </div>
-//         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(250,174,98,0.10)_0%,transparent_40%)]" />
-//         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(250,174,98,0.08)_0%,transparent_50%)]" />
-//       </div>
-
-//       {/* ===== HERO SECTION ===== */}
-//       <div className="relative z-10 mt-20">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
-//           <div className="max-w-3xl mx-auto">
-//             <div className="hero-line flex items-center justify-center gap-3 mb-6 origin-left">
-//               <div className="w-8 h-px bg-linear-to-r from-[#FAAE62] to-transparent" />
-//               <span className="text-[10px] font-bold text-[#FAAE62] uppercase tracking-[0.3em]">
-//                 What We Offer
-//               </span>
-//               <div className="w-8 h-px bg-linear-to-l from-[#FAAE62] to-transparent" />
-//             </div>
-
-//             <h1 className="hero-title text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.1] mb-6 font-bold">
-//               Our <span className="text-[#FAAE62]">Services</span>
-//             </h1>
-
-//             <p className="hero-sub text-white/70 text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto">
-//               Comprehensive real estate solutions tailored to your needs. From
-//               finding your dream home to maximizing your investment returns.
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ===== SERVICES SECTION ===== */}
-//       <div ref={servicesRef} className="relative z-10">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-//           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-//             {services.map((service, index) => {
-//               const Icon = service.icon;
-//               return (
-//                 <div
-//                   key={index}
-//                   className="service-card group relative bg-[#4a1d60] rounded-2xl p-7 sm:p-8 border border-white/10 hover:border-[#FAAE62]/40 transition-all duration-500 overflow-hidden"
-//                 >
-//                   {/* Subtle glow */}
-//                   <div
-//                     className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-//                     style={{ backgroundColor: "#FAAE62" }}
-//                   />
-
-//                   <div
-//                     className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border border-[#FAAE62]/20 bg-[#FAAE62]/10 transition-all duration-500 group-hover:scale-110"
-//                   >
-//                     <Icon
-//                       size={24}
-//                       className="text-[#FAAE62] transition-transform duration-500 group-hover:scale-110"
-//                     />
-//                   </div>
-
-//                   <h3 className="relative text-xl text-white mb-3 leading-tight font-semibold">
-//                     {service.title}
-//                   </h3>
-
-//                   <p className="relative text-white/70 text-sm leading-relaxed mb-6">
-//                     {service.description}
-//                   </p>
-
-//                   <ul className="relative space-y-2.5">
-//                     {service.features.map((feature, i) => (
-//                       <li
-//                         key={i}
-//                         className="flex items-start gap-2.5 text-sm text-white/70"
-//                       >
-//                         <div
-//                           className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 border border-[#FAAE62]/20 bg-[#FAAE62]/10 transition-colors duration-300"
-//                         >
-//                           <Check size={10} className="text-[#FAAE62]" />
-//                         </div>
-//                         <span>{feature}</span>
-//                       </li>
-//                     ))}
-//                   </ul>
-
-//                   <div className="relative mt-7 pt-5 border-t border-white/10">
-//                     <Link
-//                       href="/contact"
-//                       className="inline-flex items-center gap-2 text-sm font-semibold text-[#FAAE62] transition-all duration-300 group/link"
-//                     >
-//                       Learn More
-//                       <ArrowRight
-//                         size={14}
-//                         className="transition-transform duration-300 group-hover/link:translate-x-1"
-//                       />
-//                     </Link>
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ===== GUIDES DOWNLOAD SECTION ===== */}
-//       <div ref={guidesRef} className="relative z-10">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-//           <div className="text-center mb-14">
-//             <div className="flex items-center justify-center gap-3 mb-5">
-//               <div className="w-8 h-px bg-linear-to-r from-[#FAAE62] to-transparent" />
-//               <span className="text-[10px] font-bold text-[#FAAE62] uppercase tracking-[0.3em]">
-//                 Free Resources
-//               </span>
-//               <div className="w-8 h-px bg-linear-to-l from-[#FAAE62] to-transparent" />
-//             </div>
-
-//             <h2 className="text-3xl sm:text-4xl text-white tracking-tight leading-[1.1] mb-4 font-bold">
-//               Download Our <span className="text-[#FAAE62]">Free Guides</span>
-//             </h2>
-
-//             <p className="text-white/70 text-base max-w-xl mx-auto">
-//               Comprehensive resources to help you make informed real estate
-//               decisions. Download instantly after filling a quick form.
-//             </p>
-//           </div>
-
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-//             {guides.map((guide) => {
-//               const GuideIcon = guide.icon;
-//               return (
-//                 <div
-//                   key={guide.type}
-//                   className="guide-card group relative bg-[#4a1d60] rounded-2xl border border-white/10 hover:border-[#FAAE62]/40 transition-all duration-500"
-//                 >
-//                   {/* Subtle glow */}
-//                   <div
-//                     className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-//                     style={{ backgroundColor: "#FAAE62" }}
-//                   />
-
-//                   <div className="relative p-7 sm:p-8">
-//                     <div className="flex items-start justify-between mb-5">
-//                       <div
-//                         className="w-12 h-12 rounded-xl flex items-center justify-center border border-[#FAAE62]/20 bg-[#FAAE62]/10 transition-all duration-500 group-hover:scale-110"
-//                       >
-//                         <GuideIcon size={22} className="text-[#FAAE62]" />
-//                       </div>
-//                       <span
-//                         className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border border-[#FAAE62]/20 bg-[#FAAE62]/10 text-[#FAAE62]"
-//                       >
-//                         Free PDF
-//                       </span>
-//                     </div>
-
-//                     <h3 className="text-xl text-white mb-2 font-semibold">
-//                       {guide.title}
-//                     </h3>
-//                     <p className="text-white/70 text-sm leading-relaxed mb-5">
-//                       {guide.description}
-//                     </p>
-
-//                     <ul className="space-y-2 mb-7">
-//                       {guide.contents.map((item, i) => (
-//                         <li
-//                           key={i}
-//                           className="flex items-center gap-2.5 text-xs text-white/60"
-//                         >
-//                           <div className="w-1 h-1 rounded-full shrink-0 bg-[#FAAE62]" />
-//                           {item}
-//                         </li>
-//                       ))}
-//                     </ul>
-
-//                     <GuideForm guideType={guide.type} />
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-
-//           <div className="text-center mt-10">
-//             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-full">
-//               <ShieldCheck size={14} className="text-[#FAAE62]/60" />
-//               <span className="text-xs text-white/50">
-//                 Your information is secure. We never share your data.
-//               </span>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// "use client";
-
-// import { useEffect, useRef } from "react";
-// import Link from "next/link";
-// import Image from "next/image";
-// import {
-//   ShieldCheck,
-//   BarChart3,
-//   Target,
-//   Check,
-//   ArrowRight,
-//   BookOpen,
-//   Download,
-//   FileText,
-//   Users,
-//   TrendingUp,
-//   Home,
-//   Search,
-//   Scale,
-//   Star,
-// } from "lucide-react";
-// import gsap from "gsap";
-// import { ScrollTrigger } from "gsap/ScrollTrigger";
-// import GuideForm from "@/components/forms/GuideForm";
-
-// gsap.registerPlugin(ScrollTrigger);
-
-// // ==========================================
-// // ✅ COLOR PALETTE
-// // ==========================================
-// const TURQUOISE = "#20B2B8";
-// const LIGHT_AQUA = "#BEEBF0";
-// const DARK_PINK = "#D81B60";
-// const DARK_ORANGE = "#F2673A";
-// const PEACH = "#FFC8B5";
-// const WARM_CREAM = "#FFF7F0";
-// const WARM_TAUPE = "#D9D2C7";
-// const NAVY = "#1F2D3D";
-
-// const NAVY_LIGHT = "#263848";
-// const NAVY_DARK = "#172636";
-// const NAVY_CARD = "#1E3040";
-
-// const CREAM_30 = "#FFF7F04D";
-// const CREAM_40 = "#FFF7F066";
-// const CREAM_50 = "#FFF7F080";
-// const CREAM_60 = "#FFF7F099";
-// const CREAM_70 = "#FFF7F0B3";
-// const CREAM_75 = "#FFF7F0BF";
-// const CREAM_80 = "#FFF7F0CC";
-// const CREAM_90 = "#FFF7F0E6";
-
-// // ============================================
-// // SERVICES DATA
-// // ============================================
-// const services = [
-//   {
-//     icon: ShieldCheck,
-//     title: "Buyer & Seller Representation",
-//     description:
-//       "Expert guidance and personalized representation through every stage of your real estate journey. Whether you're buying, selling, or both, we help you make informed decisions with confidence and peace of mind.",
-//     features: [
-//       "Skilled negotiation on your behalf",
-//       "Strategic pricing & market analysis",
-//       "Professional marketing & exposure",
-//       "Support from consultation to closing",
-//     ],
-//   },
-//   {
-//     icon: BarChart3,
-//     title: "Home Valuations",
-//     description:
-//       "Know what your home is worth with a comprehensive market evaluation. We provide honest advice and local market expertise so you can plan your next move with confidence.",
-//     features: [
-//       "Accurate comparative market analysis",
-//       "Current Northern Virginia market insights",
-//       "Pricing strategies for today's market",
-//       "No-obligation consultation",
-//     ],
-//   },
-//   {
-//     icon: Target,
-//     title: "Downsizing Services",
-//     description:
-//       "Moving to a home that better fits your lifestyle is about more than buying and selling. We provide personalized guidance to help make your transition as smooth and stress-free as possible.",
-//     features: [
-//       "Customized downsizing plan",
-//       "Neighbourhood & lifestyle guidance",
-//       "Trusted local professional referrals",
-//       "Step-by-step support from start to finish",
-//     ],
-//   },
-// ];
-
-// // ============================================
-// // GUIDE DATA
-// // ============================================
-// const guides = [
-//   {
-//     type: "buyer",
-//     title: "Buyer's Guide",
-//     description:
-//       "Everything you need to know before purchasing your dream property. A step-by-step roadmap for first-time and experienced buyers.",
-//     contents: [
-//       "Complete buying process explained",
-//       "Financing options & mortgage tips",
-//       "Property inspection checklist",
-//       "Common mistakes to avoid",
-//       "Negotiation strategies that work",
-//     ],
-//     icon: Home,
-//   },
-//   {
-//     type: "seller",
-//     title: "Seller's Guide",
-//     description:
-//       "Maximize your property's value with our proven selling strategies. Learn how to attract the right buyers and close at the best price.",
-//     contents: [
-//       "How to price your property right",
-//       "Home staging & preparation tips",
-//       "Marketing strategies that sell",
-//       "Negotiation tactics for sellers",
-//       "Legal requirements simplified",
-//     ],
-//     icon: TrendingUp,
-//   },
-// ];
-
-// // ============================================
-// // MAIN PAGE
-// // ============================================
-// export default function ServicesPage() {
-//   const pageRef = useRef(null);
-//   const servicesRef = useRef(null);
-//   const guidesRef = useRef(null);
-
-//   // ---- GSAP Animations ----
-//   useEffect(() => {
-//     const ctx = gsap.context(() => {
-//       gsap.fromTo(
-//         ".hero-title",
-//         { opacity: 0, y: 30 },
-//         { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }
-//       );
-//       gsap.fromTo(
-//         ".hero-sub",
-//         { opacity: 0, y: 20 },
-//         { opacity: 1, y: 0, duration: 0.6, ease: "power2.out", delay: 0.2 }
-//       );
-//       gsap.fromTo(
-//         ".hero-line",
-//         { scaleX: 0 },
-//         { scaleX: 1, duration: 0.8, ease: "power2.out", delay: 0.1 }
-//       );
-
-//       gsap.fromTo(
-//         ".service-card",
-//         { opacity: 0, y: 40 },
-//         {
-//           opacity: 1,
-//           y: 0,
-//           duration: 0.6,
-//           stagger: 0.15,
-//           ease: "power2.out",
-//           scrollTrigger: {
-//             trigger: servicesRef.current,
-//             start: "top 85%",
-//           },
-//         }
-//       );
-
-//       gsap.fromTo(
-//         ".guide-card",
-//         { opacity: 0, y: 40 },
-//         {
-//           opacity: 1,
-//           y: 0,
-//           duration: 0.6,
-//           stagger: 0.15,
-//           ease: "power2.out",
-//           scrollTrigger: {
-//             trigger: guidesRef.current,
-//             start: "top 85%",
-//           },
-//         }
-//       );
-//     }, pageRef);
-
-//     return () => ctx.revert();
-//   }, []);
-
-//   return (
-//     <div
-//       ref={pageRef}
-//       className="min-h-screen relative overflow-x-hidden"
-//       style={{ backgroundColor: NAVY }}
-//     >
-//       {/* ===== BACKGROUND EFFECTS + WATERMARK ===== */}
-//       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-//         <div
-//           className="absolute inset-0 opacity-[0.03]"
-//           style={{
-//             backgroundImage: `radial-gradient(circle at 1px 1px, ${TURQUOISE} 1px, transparent 0)`,
-//             backgroundSize: "40px 40px",
-//           }}
-//         />
-//         {/* Watermark logo */}
-//         <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
-//           <div className="relative w-75 h-75 sm:w-100 sm:h-100">
-//             <Image
-//               src="/images/logo12.png"
-//               alt="Watermark"
-//               fill
-//               className="object-contain"
-//               unoptimized
-//             />
-//           </div>
-//         </div>
-//         <div
-//           className="absolute inset-0"
-//           style={{
-//             background: `radial-gradient(ellipse at top left, ${TURQUOISE}10 0%, transparent 40%)`,
-//           }}
-//         />
-//         <div
-//           className="absolute inset-0"
-//           style={{
-//             background: `radial-gradient(ellipse at bottom right, ${PEACH}08 0%, transparent 50%)`,
-//           }}
-//         />
-//       </div>
-
-//       {/* ===== HERO SECTION ===== */}
-//       <div className="relative z-10 mt-20">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
-//           <div className="max-w-3xl mx-auto">
-//             <div className="hero-line flex items-center justify-center gap-3 mb-6 origin-left">
-//               <div
-//                 className="w-8 h-px"
-//                 style={{ background: `linear-gradient(to right, ${TURQUOISE}, transparent)` }}
-//               />
-//               <span
-//                 className="text-[10px] font-bold uppercase tracking-[0.3em]"
-//                 style={{ color: TURQUOISE }}
-//               >
-//                 What We Offer
-//               </span>
-//               <div
-//                 className="w-8 h-px"
-//                 style={{ background: `linear-gradient(to left, ${TURQUOISE}, transparent)` }}
-//               />
-//             </div>
-
-//             <h1 className="hero-title text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.1] mb-6 font-bold">
-//               Our <span style={{ color: TURQUOISE }}>Services</span>
-//             </h1>
-
-//             <p
-//               className="hero-sub text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto"
-//               style={{ color: CREAM_70 }}
-//             >
-//               Comprehensive real estate solutions tailored to your needs. From
-//               finding your dream home to maximizing your investment returns.
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ===== SERVICES SECTION ===== */}
-//       <div ref={servicesRef} className="relative z-10">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-//           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-//             {services.map((service, index) => {
-//               const Icon = service.icon;
-//               return (
-//                 <div
-//                   key={index}
-//                   className="service-card group relative rounded-2xl p-7 sm:p-8 transition-all duration-500 overflow-hidden"
-//                   style={{
-//                     backgroundColor: NAVY_CARD,
-//                     border: `1px solid ${WARM_CREAM}10`,
-//                   }}
-//                   onMouseEnter={(e) => {
-//                     e.currentTarget.style.borderColor = `${TURQUOISE}40`;
-//                   }}
-//                   onMouseLeave={(e) => {
-//                     e.currentTarget.style.borderColor = `${WARM_CREAM}10`;
-//                   }}
-//                 >
-//                   {/* Subtle glow */}
-//                   <div
-//                     className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-//                     style={{ backgroundColor: TURQUOISE }}
-//                   />
-
-//                   <div
-//                     className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all duration-500 group-hover:scale-110"
-//                     style={{
-//                       border: `1px solid ${TURQUOISE}20`,
-//                       backgroundColor: `${TURQUOISE}10`,
-//                     }}
-//                   >
-//                     <Icon
-//                       size={24}
-//                       style={{ color: TURQUOISE }}
-//                       className="transition-transform duration-500 group-hover:scale-110"
-//                     />
-//                   </div>
-
-//                   <h3 className="relative text-xl text-white mb-3 leading-tight font-semibold">
-//                     {service.title}
-//                   </h3>
-
-//                   <p className="relative text-sm leading-relaxed mb-6" style={{ color: CREAM_70 }}>
-//                     {service.description}
-//                   </p>
-
-//                   <ul className="relative space-y-2.5">
-//                     {service.features.map((feature, i) => (
-//                       <li
-//                         key={i}
-//                         className="flex items-start gap-2.5 text-sm"
-//                         style={{ color: CREAM_70 }}
-//                       >
-//                         <div
-//                           className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-300"
-//                           style={{
-//                             border: `1px solid ${TURQUOISE}20`,
-//                             backgroundColor: `${TURQUOISE}10`,
-//                           }}
-//                         >
-//                           <Check size={10} style={{ color: TURQUOISE }} />
-//                         </div>
-//                         <span>{feature}</span>
-//                       </li>
-//                     ))}
-//                   </ul>
-
-//                   <div
-//                     className="relative mt-7 pt-5"
-//                     style={{ borderTop: `1px solid ${WARM_CREAM}10` }}
-//                   >
-//                     <Link
-//                       href="/contact"
-//                       className="inline-flex items-center gap-2 text-sm font-semibold transition-all duration-300 group/link"
-//                       style={{ color: TURQUOISE }}
-//                     >
-//                       Learn More
-//                       <ArrowRight
-//                         size={14}
-//                         className="transition-transform duration-300 group-hover/link:translate-x-1"
-//                       />
-//                     </Link>
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ===== GUIDES DOWNLOAD SECTION ===== */}
-//       <div ref={guidesRef} className="relative z-10">
-//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-//           <div className="text-center mb-14">
-//             <div className="flex items-center justify-center gap-3 mb-5">
-//               <div
-//                 className="w-8 h-px"
-//                 style={{ background: `linear-gradient(to right, ${TURQUOISE}, transparent)` }}
-//               />
-//               <span
-//                 className="text-[10px] font-bold uppercase tracking-[0.3em]"
-//                 style={{ color: TURQUOISE }}
-//               >
-//                 Free Resources
-//               </span>
-//               <div
-//                 className="w-8 h-px"
-//                 style={{ background: `linear-gradient(to left, ${TURQUOISE}, transparent)` }}
-//               />
-//             </div>
-
-//             <h2 className="text-3xl sm:text-4xl text-white tracking-tight leading-[1.1] mb-4 font-bold">
-//               Download Our <span style={{ color: TURQUOISE }}>Free Guides</span>
-//             </h2>
-
-//             <p className="text-base max-w-xl mx-auto" style={{ color: CREAM_70 }}>
-//               Comprehensive resources to help you make informed real estate
-//               decisions. Download instantly after filling a quick form.
-//             </p>
-//           </div>
-
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-//             {guides.map((guide) => {
-//               const GuideIcon = guide.icon;
-//               return (
-//                 <div
-//                   key={guide.type}
-//                   className="guide-card group relative rounded-2xl transition-all duration-500"
-//                   style={{
-//                     backgroundColor: NAVY_CARD,
-//                     border: `1px solid ${WARM_CREAM}10`,
-//                   }}
-//                   onMouseEnter={(e) => {
-//                     e.currentTarget.style.borderColor = `${TURQUOISE}40`;
-//                   }}
-//                   onMouseLeave={(e) => {
-//                     e.currentTarget.style.borderColor = `${WARM_CREAM}10`;
-//                   }}
-//                 >
-//                   {/* Subtle glow */}
-//                   <div
-//                     className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-//                     style={{ backgroundColor: TURQUOISE }}
-//                   />
-
-//                   <div className="relative p-7 sm:p-8">
-//                     <div className="flex items-start justify-between mb-5">
-//                       <div
-//                         className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110"
-//                         style={{
-//                           border: `1px solid ${TURQUOISE}20`,
-//                           backgroundColor: `${TURQUOISE}10`,
-//                         }}
-//                       >
-//                         <GuideIcon size={22} style={{ color: TURQUOISE }} />
-//                       </div>
-//                       <span
-//                         className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full"
-//                         style={{
-//                           border: `1px solid ${TURQUOISE}20`,
-//                           backgroundColor: `${TURQUOISE}10`,
-//                           color: TURQUOISE,
-//                         }}
-//                       >
-//                         Free PDF
-//                       </span>
-//                     </div>
-
-//                     <h3 className="text-xl text-white mb-2 font-semibold">
-//                       {guide.title}
-//                     </h3>
-//                     <p className="text-sm leading-relaxed mb-5" style={{ color: CREAM_70 }}>
-//                       {guide.description}
-//                     </p>
-
-//                     <ul className="space-y-2 mb-7">
-//                       {guide.contents.map((item, i) => (
-//                         <li
-//                           key={i}
-//                           className="flex items-center gap-2.5 text-xs"
-//                           style={{ color: CREAM_60 }}
-//                         >
-//                           <div
-//                             className="w-1 h-1 rounded-full shrink-0"
-//                             style={{ backgroundColor: TURQUOISE }}
-//                           />
-//                           {item}
-//                         </li>
-//                       ))}
-//                     </ul>
-
-//                     <GuideForm guideType={guide.type} />
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-
-//           <div className="text-center mt-10">
-//             <div
-//               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full"
-//               style={{
-//                 backgroundColor: `${WARM_CREAM}05`,
-//                 border: `1px solid ${WARM_CREAM}10`,
-//               }}
-//             >
-//               <ShieldCheck size={14} style={{ color: `${TURQUOISE}60` }} />
-//               <span className="text-xs" style={{ color: CREAM_50 }}>
-//                 Your information is secure. We never share your data.
-//               </span>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -1275,48 +9,45 @@ import {
   Target,
   Check,
   ArrowRight,
-  BookOpen,
-  Download,
-  FileText,
   Users,
   TrendingUp,
   Home,
   Search,
-  Scale,
   Star,
 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { motion } from "framer-motion";
 import GuideForm from "@/components/forms/GuideForm";
 
 gsap.registerPlugin(ScrollTrigger);
 
 // ==========================================
-// ✅ UPDATED COLOR PALETTE
+// BLUE SCHEME — property.js se same (green/teal hata diya)
 // ==========================================
-const TEAL = "#019586";
-const DARK_TEAL = "#014D41";
-const MINT = "#B1F1E9";
-const BRIGHT_CYAN = "#04D3C7";
+const INK = "#0A1A2F";
+const PAPER = "#F3F6FB";
+const ACCENT = "#1D4ED8";
+const ACCENT_DK = "#1E3A8A";
+const ACCENT_SOFT = "#DBEAFE";
+const ACCENT_LT = "#93C5FD";
+const LINE = "#DCE3EE";
+const MUTED = "#56697E";
+const CARD = "#FFFFFF";
 
-// Derived colors from new palette
-const NAVY = "#0A2D28";
-const NAVY_LIGHT = "#0F3D36";
-const NAVY_DARK = "#06211D";
-const NAVY_CARD = "#0D332D";
-
-// Creamy White with opacity helpers
-const CREAM_30 = "#B1F1E94D";
-const CREAM_40 = "#B1F1E966";
-const CREAM_50 = "#B1F1E980";
-const CREAM_60 = "#B1F1E999";
-const CREAM_70 = "#B1F1E9B3";
-const CREAM_75 = "#B1F1E9BF";
-const CREAM_80 = "#B1F1E9CC";
-const CREAM_90 = "#B1F1E9E6";
+// Hero subtitle color — dark image area pe light text ke liye
+// (property.js ke rgba(219,234,254,0.75) jaisa)
+const HERO_SUB = "rgba(219,234,254,0.75)";
 
 // ============================================
-// SERVICES DATA
+// BACKGROUND IMAGE — property.js se same
+// (modern building, blue scheme ke saath match)
+// ============================================
+const BG_IMAGE =
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2400&auto=format&fit=crop";
+
+// ============================================
+// SERVICES DATA — offered services ki list
 // ============================================
 const services = [
   {
@@ -1327,20 +58,6 @@ const services = [
     features: [
       "Property search & selection guidance",
       "Market analysis & property evaluation",
-      "Skilled negotiation on your behalf",
-      "Support from consultation to closing",
-    ],
-  },
-  {
-    icon: ShieldCheck,
-    title: "Seller Representation",
-    description:
-      "A strategic approach to selling your property with confidence. From pricing and preparation to marketing and negotiations, we help position your property to attract qualified buyers and achieve the best possible outcome.",
-    features: [
-      "Strategic pricing & market analysis",
-      "Professional property marketing & exposure",
-      "Skilled negotiation with buyers",
-      "Support from listing to closing",
     ],
   },
   {
@@ -1350,27 +67,59 @@ const services = [
       "Know what your home is worth with a comprehensive market evaluation. We provide honest advice and local market expertise so you can plan your next move with confidence.",
     features: [
       "Accurate comparative market analysis",
-      "Current Northern Virginia market insights",
+      "Current local market insights & trends",
       "Pricing strategies for today's market",
       "No-obligation consultation",
     ],
   },
-  // {
-  //   icon: Target,
-  //   title: "Downsizing Services",
-  //   description:
-  //     "Moving to a home that better fits your lifestyle is about more than buying and selling. We provide personalized guidance to help make your transition as smooth and stress-free as possible.",
-  //   features: [
-  //     "Customized downsizing plan",
-  //     "Neighbourhood & lifestyle guidance",
-  //     "Trusted local professional referrals",
-  //     "Step-by-step support from start to finish",
-  //   ],
-  // },
 ];
 
 // ============================================
-// GUIDE DATA
+// STATS DATA — credibility numbers
+// ============================================
+const stats = [
+  { icon: Home, value: "500+", label: "Properties Sold", sub: "Across all price ranges" },
+  { icon: Users, value: "300+", label: "Happy Clients", sub: "Trusted by families" },
+  { icon: TrendingUp, value: "$2B+", label: "Total Volume", sub: "In closed sales" },
+  { icon: Star, value: "4.9/5", label: "Client Rating", sub: "Based on 300+ reviews" },
+];
+
+// ============================================
+// PROCESS STEPS — 4 step working flow
+// ============================================
+const processSteps = [
+  {
+    num: "01",
+    title: "Consultation",
+    description:
+      "We start by understanding your goals, timeline, and budget in a personalized discovery session.",
+    icon: Search,
+  },
+  {
+    num: "02",
+    title: "Strategy",
+    description:
+      "We craft a tailored plan — whether buying, selling, or both — aligned with your objectives and the local market.",
+    icon: Target,
+  },
+  {
+    num: "03",
+    title: "Execution",
+    description:
+      "From property tours and inspections to marketing and negotiations, we handle the heavy lifting.",
+    icon: BarChart3,
+  },
+  {
+    num: "04",
+    title: "Close & Beyond",
+    description:
+      "We guide you to a smooth closing day and stay connected for everything that comes after.",
+    icon: ShieldCheck,
+  },
+];
+
+// ============================================
+// GUIDES DATA — free downloadable PDFs
 // ============================================
 const guides = [
   {
@@ -1383,7 +132,7 @@ const guides = [
       "Financing options & mortgage tips",
       "Property inspection checklist",
       "Common mistakes to avoid",
-      "Negotiation strategies that work",
+      "Navex platform now offers Seller's Guide section integration",
     ],
     icon: Home,
   },
@@ -1404,63 +153,104 @@ const guides = [
 ];
 
 // ============================================
+// ANIMATION VARIANTS — framer motion ke liye
+// ============================================
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+// ============================================
 // MAIN PAGE
 // ============================================
 export default function ServicesPage() {
   const pageRef = useRef(null);
+  const bgRef = useRef(null);
   const servicesRef = useRef(null);
   const guidesRef = useRef(null);
+  const statsRef = useRef(null);
+  const processRef = useRef(null);
 
-  // ---- GSAP Animations ----
+  // ---- GSAP Animations (parallax + scroll reveals) ----
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Background parallax — scroll pe bg halka sa neeche shift hota hai
+      if (bgRef.current) {
+        gsap.to(bgRef.current, {
+          yPercent: 22,
+          ease: "none",
+          scrollTrigger: {
+            trigger: pageRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
+      }
+
+      // Hero entrance animations
+      gsap.fromTo(
+        ".hero-line",
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.8, ease: "power2.out", delay: 0.1 }
+      );
       gsap.fromTo(
         ".hero-title",
         { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" },
+        { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }
       );
       gsap.fromTo(
         ".hero-sub",
         { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out", delay: 0.2 },
-      );
-      gsap.fromTo(
-        ".hero-line",
-        { scaleX: 0 },
-        { scaleX: 1, duration: 0.8, ease: "power2.out", delay: 0.1 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out", delay: 0.2 }
       );
 
-      gsap.fromTo(
-        ".service-card",
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.15,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: servicesRef.current,
-            start: "top 85%",
-          },
-        },
-      );
+      // Stats reveal — scroll pe ek ek kar ke aate hain
+      if (statsRef.current) {
+        gsap.fromTo(
+          ".stat-item",
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            stagger: 0.12,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: statsRef.current,
+              start: "top 80%",
+            },
+          }
+        );
+      }
 
-      gsap.fromTo(
-        ".guide-card",
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.15,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: guidesRef.current,
-            start: "top 85%",
-          },
-        },
-      );
+      // Process steps — left/right se slide in
+      if (processRef.current) {
+        gsap.fromTo(
+          ".process-step",
+          { opacity: 0, x: (i) => (i % 2 === 0 ? -40 : 40) },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.7,
+            stagger: 0.15,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: processRef.current,
+              start: "top 80%",
+            },
+          }
+        );
+      }
     }, pageRef);
 
     return () => ctx.revert();
@@ -1469,132 +259,172 @@ export default function ServicesPage() {
   return (
     <div
       ref={pageRef}
-      className="min-h-screen relative overflow-x-hidden"
-      style={{ backgroundColor: NAVY }}
+      className="relative min-h-screen overflow-x-hidden"
+      style={{ backgroundColor: PAPER, color: INK }}
     >
-      {/* ===== BACKGROUND EFFECTS + WATERMARK ===== */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      {/* ===== BACKGROUND IMAGE + PARALLAX =====
+          property.js ka EXACT bg concept — same gradients, same radials,
+          same dot pattern. Top pe dark INK fade (hero readable),
+          bottom pe PAPER fade (neeche ke cards light bg pe readable) */}
+      <div
+        ref={bgRef}
+        className="fixed inset-0 z-0 will-change-transform pointer-events-none"
+        style={{ height: "130%", top: "-15%" }}
+      >
+        <Image
+          src={BG_IMAGE}
+          alt=""
+          fill
+          priority
+          unoptimized
+          className="object-cover"
+          sizes="100vw"
+        />
+
+        {/* LAYER 1 — TOP dark gradient (property.js se EXACT)
+            top se strong dark INK, neeche transparent — hero text readable */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, ${TEAL} 1px, transparent 0)`,
+            background: `linear-gradient(180deg, ${INK}E6 0%, ${INK}CC 15%, ${INK}80 30%, ${INK}33 45%, transparent 60%)`,
+          }}
+        />
+
+        {/* LAYER 2 — BOTTOM PAPER gradient (property.js se EXACT)
+            bottom se light PAPER fade — neeche ke sections/cards readable */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(0deg, ${PAPER}F2 0%, ${PAPER}CC 20%, transparent 50%)`,
+          }}
+        />
+
+        {/* LAYER 3 — Blue radial glow (top right corner — property.js se same) */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 90% 8%, rgba(29,78,216,0.30) 0%, rgba(29,78,216,0.08) 25%, transparent 50%)`,
+          }}
+        />
+
+        {/* LAYER 4 — Light blue radial (property.js se same) */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 10% 35%, rgba(147,197,253,0.10) 0%, transparent 35%)`,
+          }}
+        />
+
+        {/* LAYER 5 — Dot pattern (property.js se same, white dots) */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, #FFFFFF 1px, transparent 0)`,
             backgroundSize: "40px 40px",
-          }}
-        />
-        {/* Watermark logo */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.06]">
-          <div className="relative w-75 h-75 sm:w-100 sm:h-100">
-            <Image
-              src="/images/logo12.png"
-              alt="Watermark"
-              fill
-              className="object-contain"
-              unoptimized
-            />
-          </div>
-        </div>
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse at top left, ${TEAL}10 0%, transparent 40%)`,
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(ellipse at bottom right, ${MINT}08 0%, transparent 50%)`,
           }}
         />
       </div>
 
-      {/* ===== HERO SECTION ===== */}
-      <div className="relative z-10 mt-20">
+      {/* ===== HERO ===== (top dark zone pe — white text) */}
+      <section className="relative z-10 mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
           <div className="max-w-3xl mx-auto">
-            <div className="hero-line flex items-center justify-center gap-3 mb-6 origin-left">
+            <motion.div
+              className="hero-line flex items-center justify-center gap-3 mb-6 origin-center"
+              initial={{ scaleX: 0, opacity: 0 }}
+              animate={{ scaleX: 1, opacity: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
               <div
                 className="w-8 h-px"
-                style={{
-                  background: `linear-gradient(to right, ${TEAL}, transparent)`,
-                }}
+                style={{ background: `linear-gradient(to right, ${ACCENT}, transparent)` }}
               />
               <span
                 className="text-[10px] font-bold uppercase tracking-[0.3em]"
-                style={{ color: TEAL }}
+                style={{ color: ACCENT_LT }}
               >
                 What We Offer
               </span>
               <div
                 className="w-8 h-px"
-                style={{
-                  background: `linear-gradient(to left, ${TEAL}, transparent)`,
-                }}
+                style={{ background: `linear-gradient(to left, ${ACCENT}, transparent)` }}
               />
-            </div>
+            </motion.div>
 
-            <h1 className="hero-title text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-[1.1] mb-6 font-bold">
-              Our <span style={{ color: TEAL }}>Services</span>
-            </h1>
-
-            <p
-              className="hero-sub text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto"
-              style={{ color: CREAM_70 }}
+            <motion.h1
+              className="hero-title text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[1.1] mb-6 font-bold"
+              style={{ color: "#FFFFFF" }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
             >
-              Comprehensive real estate solutions tailored to your needs. From
-              finding your dream home to maximizing your investment returns.
-            </p>
+              Our <span style={{ color: ACCENT_LT }}>Services</span>
+            </motion.h1>
+
+            <motion.p
+              className="hero-sub text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto"
+              style={{ color: HERO_SUB }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+            >
+              Comprehensive real estate solutions tailored to your needs. From finding your
+              dream home to maximizing your investment returns.
+            </motion.p>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ===== SERVICES SECTION ===== */}
-      <div ref={servicesRef} className="relative z-10">
+      {/* ===== SERVICES ===== (light zone pe — white cards, dark text) */}
+      <section ref={servicesRef} className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          >
             {services.map((service, index) => {
               const Icon = service.icon;
               return (
-                <div
+                <motion.div
                   key={index}
-                  className="service-card group relative rounded-2xl p-7 sm:p-8 transition-all duration-500 overflow-hidden"
+                  variants={itemVariants}
+                  whileHover={{ y: -6 }}
+                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  className="service-card group relative rounded-2xl p-7 sm:p-8 overflow-hidden transition-shadow duration-500 hover:shadow-[0_30px_60px_-20px_rgba(10,26,47,0.40)]"
                   style={{
-                    backgroundColor: NAVY_CARD,
-                    border: `1px solid ${MINT}10`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = `${TEAL}40`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = `${MINT}10`;
+                    backgroundColor: CARD,
+                    border: `1px solid ${LINE}`,
                   }}
                 >
-                  {/* Subtle glow */}
+                  {/* Hover glow — blue corner glow */}
                   <div
-                    className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-                    style={{ backgroundColor: TEAL }}
+                    className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"
+                    style={{ backgroundColor: ACCENT }}
                   />
 
                   <div
-                    className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all duration-500 group-hover:scale-110"
+                    className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-110"
                     style={{
-                      border: `1px solid ${TEAL}20`,
-                      backgroundColor: `${TEAL}10`,
+                      border: `1px solid ${LINE}`,
+                      backgroundColor: ACCENT_SOFT,
                     }}
                   >
-                    <Icon
-                      size={24}
-                      style={{ color: TEAL }}
-                      className="transition-transform duration-500 group-hover:scale-110"
-                    />
+                    <Icon size={24} style={{ color: ACCENT_DK }} />
                   </div>
 
-                  <h3 className="relative text-xl text-white mb-3 leading-tight font-semibold">
+                  <h3
+                    className="relative text-xl mb-3 leading-tight font-semibold"
+                    style={{ color: INK }}
+                  >
                     {service.title}
                   </h3>
 
                   <p
                     className="relative text-sm leading-relaxed mb-6"
-                    style={{ color: CREAM_70 }}
+                    style={{ color: MUTED }}
                   >
                     {service.description}
                   </p>
@@ -1604,16 +434,16 @@ export default function ServicesPage() {
                       <li
                         key={i}
                         className="flex items-start gap-2.5 text-sm"
-                        style={{ color: CREAM_70 }}
+                        style={{ color: MUTED }}
                       >
                         <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-300"
+                          className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                           style={{
-                            border: `1px solid ${TEAL}20`,
-                            backgroundColor: `${TEAL}10`,
+                            border: `1px solid ${LINE}`,
+                            backgroundColor: ACCENT_SOFT,
                           }}
                         >
-                          <Check size={10} style={{ color: TEAL }} />
+                          <Check size={10} style={{ color: ACCENT_DK }} />
                         </div>
                         <span>{feature}</span>
                       </li>
@@ -1622,12 +452,14 @@ export default function ServicesPage() {
 
                   <div
                     className="relative mt-7 pt-5"
-                    style={{ borderTop: `1px solid ${MINT}10` }}
+                    style={{ borderTop: `1px solid ${LINE}` }}
                   >
                     <Link
                       href="/contact"
                       className="inline-flex items-center gap-2 text-sm font-semibold transition-all duration-300 group/link"
-                      style={{ color: TEAL }}
+                      style={{ color: ACCENT }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = ACCENT_DK)}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = ACCENT)}
                     >
                       Learn More
                       <ArrowRight
@@ -1636,105 +468,277 @@ export default function ServicesPage() {
                       />
                     </Link>
                   </div>
-                </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ===== STATS SECTION ===== */}
+      <section ref={statsRef} className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2
+              className="text-3xl sm:text-4xl tracking-tight leading-[1.1] mb-4 font-bold"
+              style={{ color: INK }}
+            >
+              Trusted by <span style={{ color: ACCENT }}>Hundreds of Families</span>
+            </h2>
+            <p className="text-base max-w-xl mx-auto" style={{ color: MUTED }}>
+              Numbers that reflect our commitment to delivering exceptional real estate
+              experiences.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {stats.map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={i}
+                  variants={itemVariants}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.3 }}
+                  whileHover={{ y: -4 }}
+                  className="stat-item group relative rounded-2xl p-5 sm:p-6 text-center transition-shadow duration-500 hover:shadow-[0_30px_60px_-20px_rgba(10,26,47,0.30)]"
+                  style={{
+                    backgroundColor: CARD,
+                    border: `1px solid ${LINE}`,
+                  }}
+                >
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-4 transition-transform duration-500 group-hover:scale-110"
+                    style={{
+                      border: `1px solid ${LINE}`,
+                      backgroundColor: ACCENT_SOFT,
+                    }}
+                  >
+                    <Icon size={20} style={{ color: ACCENT_DK }} />
+                  </div>
+                  <p
+                    className="text-3xl sm:text-4xl font-bold mb-1 leading-none"
+                    style={{
+                      background: `linear-gradient(to right, ${ACCENT_LT}, ${ACCENT})`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    {stat.value}
+                  </p>
+                  <p className="text-sm font-semibold mb-1" style={{ color: INK }}>
+                    {stat.label}
+                  </p>
+                  <p className="text-[11px]" style={{ color: MUTED }}>
+                    {stat.sub}
+                  </p>
+                </motion.div>
               );
             })}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ===== GUIDES DOWNLOAD SECTION ===== */}
-      <div ref={guidesRef} className="relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-          <div className="text-center mb-14">
+      {/* ===== PROCESS SECTION ===== */}
+      <section ref={processRef} className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-14"
+          >
             <div className="flex items-center justify-center gap-3 mb-5">
               <div
                 className="w-8 h-px"
-                style={{
-                  background: `linear-gradient(to right, ${TEAL}, transparent)`,
-                }}
+                style={{ background: `linear-gradient(to right, ${ACCENT}, transparent)` }}
               />
               <span
                 className="text-[10px] font-bold uppercase tracking-[0.3em]"
-                style={{ color: TEAL }}
+                style={{ color: ACCENT }}
+              >
+                How We Work
+              </span>
+              <div
+                className="w-8 h-px"
+                style={{ background: `linear-gradient(to left, ${ACCENT}, transparent)` }}
+              />
+            </div>
+            <h2
+              className="text-3xl sm:text-4xl tracking-tight leading-[1.1] mb-4 font-bold"
+              style={{ color: INK }}
+            >
+              Our <span style={{ color: ACCENT }}>Process</span>
+            </h2>
+            <p className="text-base max-w-xl mx-auto" style={{ color: MUTED }}>
+              A proven 4-step approach that turns uncertainty into clarity — and goals into keys.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+            {processSteps.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <motion.div
+                  key={i}
+                  className="process-step group relative rounded-2xl p-6 sm:p-7 transition-shadow duration-500 hover:shadow-[0_30px_60px_-20px_rgba(10,26,47,0.30)]"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                  whileHover={{ y: -5 }}
+                  style={{
+                    backgroundColor: CARD,
+                    border: `1px solid ${LINE}`,
+                  }}
+                >
+                  {/* Bada number watermark — background me step number */}
+                  <div
+                    className="absolute -top-2 -right-2 text-7xl font-bold opacity-[0.08] pointer-events-none select-none"
+                    style={{ color: ACCENT }}
+                  >
+                    {step.num}
+                  </div>
+
+                  <div
+                    className="relative w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-transform duration-500 group-hover:scale-110"
+                    style={{
+                      border: `1px solid ${LINE}`,
+                      backgroundColor: ACCENT_SOFT,
+                    }}
+                  >
+                    <Icon size={20} style={{ color: ACCENT_DK }} />
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded-md"
+                      style={{
+                        border: `1px solid ${LINE}`,
+                        backgroundColor: ACCENT_SOFT,
+                        color: ACCENT_DK,
+                      }}
+                    >
+                      Step {step.num}
+                    </span>
+                  </div>
+
+                  <h3
+                    className="relative text-lg mb-2 font-semibold"
+                    style={{ color: INK }}
+                  >
+                    {step.title}
+                  </h3>
+                  <p className="relative text-sm leading-relaxed" style={{ color: MUTED }}>
+                    {step.description}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== GUIDES DOWNLOAD SECTION ===== */}
+      <section ref={guidesRef} className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-14"
+          >
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <div
+                className="w-8 h-px"
+                style={{ background: `linear-gradient(to right, ${ACCENT}, transparent)` }}
+              />
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.3em]"
+                style={{ color: ACCENT }}
               >
                 Free Resources
               </span>
               <div
                 className="w-8 h-px"
-                style={{
-                  background: `linear-gradient(to left, ${TEAL}, transparent)`,
-                }}
+                style={{ background: `linear-gradient(to left, ${ACCENT}, transparent)` }}
               />
             </div>
-
-            <h2 className="text-3xl sm:text-4xl text-white tracking-tight leading-[1.1] mb-4 font-bold">
-              Download Our <span style={{ color: TEAL }}>Free Guides</span>
-            </h2>
-
-            <p
-              className="text-base max-w-xl mx-auto"
-              style={{ color: CREAM_70 }}
+            <h2
+              className="text-3xl sm:text-4xl tracking-tight leading-[1.1] mb-4 font-bold"
+              style={{ color: INK }}
             >
-              Comprehensive resources to help you make informed real estate
-              decisions. Download instantly after filling a quick form.
+              Download Our <span style={{ color: ACCENT }}>Free Guides</span>
+            </h2>
+            <p className="text-base max-w-xl mx-auto" style={{ color: MUTED }}>
+              Comprehensive resources to help you make informed real estate decisions. Download
+              instantly after filling a quick form.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
+          >
             {guides.map((guide) => {
               const GuideIcon = guide.icon;
               return (
-                <div
+                <motion.div
                   key={guide.type}
-                  className="guide-card group relative rounded-2xl transition-all duration-500"
+                  variants={itemVariants}
+                  whileHover={{ y: -6 }}
+                  className="guide-card group relative rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-[0_30px_60px_-20px_rgba(10,26,47,0.40)]"
                   style={{
-                    backgroundColor: NAVY_CARD,
-                    border: `1px solid ${MINT}10`,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = `${TEAL}40`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = `${MINT}10`;
+                    backgroundColor: CARD,
+                    border: `1px solid ${LINE}`,
                   }}
                 >
-                  {/* Subtle glow */}
+                  {/* Hover glow */}
                   <div
-                    className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-                    style={{ backgroundColor: TEAL }}
+                    className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"
+                    style={{ backgroundColor: ACCENT }}
                   />
 
                   <div className="relative p-7 sm:p-8">
                     <div className="flex items-start justify-between mb-5">
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110"
+                        className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110"
                         style={{
-                          border: `1px solid ${TEAL}20`,
-                          backgroundColor: `${TEAL}10`,
+                          border: `1px solid ${LINE}`,
+                          backgroundColor: ACCENT_SOFT,
                         }}
                       >
-                        <GuideIcon size={22} style={{ color: TEAL }} />
+                        <GuideIcon size={22} style={{ color: ACCENT_DK }} />
                       </div>
                       <span
                         className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full"
                         style={{
-                          border: `1px solid ${TEAL}20`,
-                          backgroundColor: `${TEAL}10`,
-                          color: TEAL,
+                          border: `1px solid ${LINE}`,
+                          backgroundColor: ACCENT_SOFT,
+                          color: ACCENT_DK,
                         }}
                       >
                         Free PDF
                       </span>
                     </div>
 
-                    <h3 className="text-xl text-white mb-2 font-semibold">
+                    <h3 className="text-xl mb-2 font-semibold" style={{ color: INK }}>
                       {guide.title}
                     </h3>
-                    <p
-                      className="text-sm leading-relaxed mb-5"
-                      style={{ color: CREAM_70 }}
-                    >
+
+                    <p className="text-sm leading-relaxed mb-5" style={{ color: MUTED }}>
                       {guide.description}
                     </p>
 
@@ -1743,11 +747,11 @@ export default function ServicesPage() {
                         <li
                           key={i}
                           className="flex items-center gap-2.5 text-xs"
-                          style={{ color: CREAM_60 }}
+                          style={{ color: MUTED }}
                         >
                           <div
                             className="w-1 h-1 rounded-full shrink-0"
-                            style={{ backgroundColor: TEAL }}
+                            style={{ backgroundColor: ACCENT }}
                           />
                           {item}
                         </li>
@@ -1756,27 +760,33 @@ export default function ServicesPage() {
 
                     <GuideForm guideType={guide.type} />
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
 
-          <div className="text-center mt-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mt-10"
+          >
             <div
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full"
               style={{
-                backgroundColor: `${MINT}05`,
-                border: `1px solid ${MINT}10`,
+                backgroundColor: ACCENT_SOFT,
+                border: `1px solid ${LINE}`,
               }}
             >
-              <ShieldCheck size={14} style={{ color: `${TEAL}60` }} />
-              <span className="text-xs" style={{ color: CREAM_50 }}>
+              <ShieldCheck size={14} style={{ color: ACCENT_DK }} />
+              <span className="text-xs" style={{ color: MUTED }}>
                 Your information is secure. We never share your data.
               </span>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

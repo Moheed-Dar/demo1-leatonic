@@ -1,26 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import axios from "axios";
 import {
-  ArrowRight,
-  Star,
-  MapPin,
-  Crown,
-  Building2,
-  Heart,
-  ArrowUpRight,
-} from "lucide-react";
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  useInView,
+} from "framer-motion";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowRight, MapPin, Heart } from "lucide-react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 // ============================================
-// 3-COLOR SCHEME ONLY (No white)
+// BLUE SCHEME — matches the rest of the site
 // ============================================
-const TEAL = "#019586";
-const GREEN = "#00B777";
-const MINT = "#B1F1E9";
-const DARK = "#072A26";
+const INK = "#0A1A2F";
+const PAPER = "#F3F6FB";
+const ACCENT = "#1D4ED8";
+const ACCENT_DK = "#1E3A8A";
+const ACCENT_SOFT = "#DBEAFE";
+const LINE = "#DCE3EE";
+const MUTED = "#56697E";
+const CARD = "#FFFFFF";
+
+// ============================================
+// RICH HOVER LABEL
+// ============================================
+const TemplateLabel = ({ children, title, description, position = "top" }) => {
+  let posClass = "";
+  if (position === "top") {
+    posClass =
+      "top-0 left-1/2 -translate-x-1/2 -translate-y-2 group-hover/tl:-translate-y-full";
+  } else if (position === "bottom") {
+    posClass =
+      "bottom-0 left-1/2 -translate-x-1/2 translate-y-2 group-hover/tl:translate-y-full";
+  } else if (position === "left") {
+    posClass =
+      "top-1/2 right-full -translate-y-1/2 translate-x-2 group-hover/tl:-translate-y-1/2 group-hover/tl:translate-x-0 mr-3";
+  } else if (position === "right") {
+    posClass =
+      "top-1/2 left-full -translate-y-1/2 -translate-x-2 group-hover/tl:-translate-y-1/2 group-hover/tl:translate-x-0 ml-3";
+  }
+
+  return (
+    <div className="group/tl relative">
+      {children}
+      <div
+        className={`pointer-events-none absolute z-50 ${posClass} opacity-0 transition-all duration-300 group-hover/tl:opacity-100`}
+      >
+        <div className="w-60 rounded-xl bg-black/95 p-3 shadow-2xl backdrop-blur-md">
+          <div
+            className="text-[10px] font-semibold tracking-wide"
+            style={{ color: "#93C5FD" }}
+          >
+            {title}
+          </div>
+          <div className="mt-1 text-[10px] leading-snug text-white/75">
+            {description}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ============================================
 // SAFE IMAGE HELPER
@@ -36,23 +85,42 @@ const PLACEHOLDER =
   "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80";
 
 // ============================================
-// STATUS DOT COLOR
+// HERO BACKGROUND IMAGES — full-bleed cinematic
+// Real-estate exteriors / interiors, wide aspect
+// ============================================
+const heroImages = [
+  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=2400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2400&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=2400&auto=format&fit=crop",
+];
+
+// ============================================
+// SPLIT-TEXT HEADLINE
+// Splits a string into word spans for staggered reveal
+// ============================================
+const HEADLINE_LINE_1 = "A home worth";
+const HEADLINE_LINE_2 = "coming home to";
+
+// ============================================
+// STATUS HELPERS
 // ============================================
 const getStatusDotColor = (status) => {
   const s = (status || "").toLowerCase().trim();
   switch (s) {
     case "available":
-      return "bg-emerald-400";
+      return "bg-emerald-500";
     case "sold":
-      return "bg-red-400";
+      return "bg-rose-400";
     case "rented":
       return "bg-amber-400";
     case "pending":
       return "bg-yellow-400";
     case "new":
-      return GREEN;
+      return "bg-sky-500";
     default:
-      return TEAL;
+      return "bg-emerald-500";
   }
 };
 
@@ -72,28 +140,106 @@ const getStatusText = (status) => {
   }
 };
 
-export default function HeroSection() {
-  /* ============================================================
-     SLIDER IMAGES (5 hero images)
-  ============================================================ */
-  const heroImages = [
-    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2070&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=2070&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=2070&auto=format&fit=crop",
-  ];
+// ============================================
+// COUNT-UP HOOK — animates a number when in view
+// ============================================
+const useCountUp = (target, inView, duration = 1600) => {
+  const [value, setValue] = useState(0);
 
-  /* ============================================================
-     REAL PROPERTIES (fetched from API)
-  ============================================================ */
+  useEffect(() => {
+    if (!inView) return;
+    let raf;
+    let start;
+    const targetNum = parseFloat(target);
+
+    const tick = (t) => {
+      if (start === undefined) start = t;
+      const progress = Math.min((t - start) / duration, 1);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(targetNum * eased);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+      else setValue(targetNum);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, target, duration]);
+
+  return value;
+};
+
+// ============================================
+// STATS — number + suffix parsed for count-up
+// ============================================
+const STATS = [
+  { raw: "500", suffix: "+", label: "Active listings" },
+  { raw: "12", suffix: "+", label: "Years in the market" },
+  { raw: "4.9", suffix: "", label: "Average client rating", decimals: 1 },
+];
+
+// ============================================
+// MAGNETIC BUTTON — pulls toward cursor
+// ============================================
+const MagneticButton = ({ children, ...props }) => {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 200, damping: 15, mass: 0.3 });
+  const sy = useSpring(y, { stiffness: 200, damping: 15, mass: 0.3 });
+
+  const handleMove = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = e.clientX - rect.left - rect.width / 2;
+    const relY = e.clientY - rect.top - rect.height / 2;
+    x.set(relX * 0.3);
+    y.set(relY * 0.4);
+  };
+
+  const handleLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{ x: sx, y: sy }}
+      className="inline-block"
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+export default function HeroSection() {
+  const sectionRef = useRef(null);
+  const bgRef = useRef(null);
+  const contentRef = useRef(null);
+  const statsRef = useRef(null);
+
   const [properties, setProperties] = useState([]);
   const [propertiesLoading, setPropertiesLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [likedIds, setLikedIds] = useState(new Set());
   const totalImages = heroImages.length;
 
-  // Fetch top 2 featured/latest properties
+  // Mouse parallax for floating cards
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const cardX = useSpring(mouseX, { stiffness: 60, damping: 18 });
+  const cardY = useSpring(mouseY, { stiffness: 60, damping: 18 });
+  const card2X = useSpring(mouseX, { stiffness: 40, damping: 20 });
+  const card2Y = useSpring(mouseY, { stiffness: 40, damping: 20 });
+
+  // Stats in-view trigger
+  const statsInView = useInView(statsRef, { once: true, amount: 0.4 });
+
+  // ---------- FETCH PROPERTIES ----------
   useEffect(() => {
     const fetchProperties = async () => {
       try {
@@ -112,13 +258,56 @@ export default function HeroSection() {
     fetchProperties();
   }, []);
 
-  // Auto slider
+  // ---------- IMAGE ROTATION ----------
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % totalImages);
-    }, 3500);
+    }, 5000);
     return () => clearInterval(interval);
   }, [totalImages]);
+
+  // ---------- GSAP SCROLL PARALLAX on background ----------
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Background moves slower than scroll → parallax depth
+      gsap.to(bgRef.current, {
+        yPercent: 18,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // Content drifts up slightly and fades as you scroll past
+      gsap.to(contentRef.current, {
+        yPercent: -8,
+        opacity: 0.4,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  // ---------- MOUSE PARALLAX ----------
+  const handleMouseMove = useCallback((e) => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width - 0.5;
+    const relY = (e.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(relX * 24);
+    mouseY.set(relY * 24);
+  }, [mouseX, mouseY]);
 
   const toggleLike = (id, e) => {
     e.preventDefault();
@@ -131,544 +320,535 @@ export default function HeroSection() {
     });
   };
 
-  /* ============================================================
-     PROPERTY CARD (Hero Version — Clean & Simple Layout)
-  ============================================================ */
-  const HeroPropertyCard = ({ property, index }) => {
-    const img =
-      getSafeImg(property.thumbnail) ||
-      getSafeImg(property.images?.[0]) ||
-      PLACEHOLDER;
-    const isLiked = likedIds.has(property._id);
+  // ---------- HEADLINE WORD SPLIT ----------
+  const words1 = HEADLINE_LINE_1.split(" ");
+  const words2 = HEADLINE_LINE_2.split(" ");
 
-    return (
-      <Link
-        href={`/properties/${property._id}`}
-        className="group relative flex h-full flex-1 flex-col overflow-hidden rounded-2xl transition-transform duration-300 hover:-translate-y-1"
-        style={{
-          backgroundColor: "#FFFFFF",
-          boxShadow: `0 20px 50px -15px ${TEAL}30`,
-          border: `1px solid ${TEAL}20`,
-        }}
-      >
-        {/* Image Area (65% height to fill the space nicely) */}
-        <div className="relative h-[65%] w-full overflow-hidden">
-          <Image
-            src={img}
-            alt={property.title || "Property"}
-            fill
-            loading={index === 0 ? "eager" : "lazy"}
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
-            sizes="260px"
-          />
-
-          {/* Like button */}
-          <button
-            onClick={(e) => toggleLike(property._id, e)}
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-all hover:scale-110"
-            style={{
-              backgroundColor: "#FFFFFFAA",
-              border: `1px solid ${TEAL}30`,
-            }}
-          >
-            <Heart
-              size={14}
-              className={isLiked ? "fill-red-400 text-red-400" : ""}
-              style={!isLiked ? { color: TEAL } : undefined}
-            />
-          </button>
-
-          {/* Arrow up right on hover */}
-          <div
-            className="absolute right-3 bottom-3 flex h-9 w-9 items-center justify-center rounded-xl opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2"
-            style={{
-              backgroundColor: TEAL,
-              color: "#FFFFFF",
-              boxShadow: `0 4px 12px ${GREEN}40`,
-            }}
-          >
-            <ArrowUpRight size={16} strokeWidth={2.5} />
-          </div>
-        </div>
-
-        {/* Text Content Area */}
-        <div className="flex flex-1 flex-col justify-center px-4 py-4">
-          <span
-            className="truncate text-sm font-extrabold"
-            style={{ color: DARK }}
-          >
-            {property.title || "Untitled Property"}
-          </span>
-
-          <span
-            className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium"
-            style={{ color: TEAL }}
-          >
-            <MapPin size={11} className="shrink-0" style={{ color: GREEN }} />
-            <span className="truncate">
-              {property.location || property.city || "Location"}
-            </span>
-          </span>
-
-          {/* Status pill */}
-          <div className="mt-2.5 flex items-center gap-1.5">
-            <span
-              className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
-              style={{
-                backgroundColor: `${TEAL}15`,
-                color: TEAL,
-                border: `1px solid ${TEAL}25`,
-              }}
-            >
-              <span
-                className={`inline-block h-1.5 w-1.5 rounded-full ${getStatusDotColor(property.status)}`}
-              />
-              {getStatusText(property.status)}
-            </span>
-            {/* {property.propertyCode && (
-              <span
-                className="rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold"
-                style={{
-                  color: GREEN,
-                  backgroundColor: `${GREEN}15`,
-                }}
-              >
-                {property.propertyCode}
-              </span>
-            )} */}
-          </div>
-        </div>
-      </Link>
-    );
+  const headlineContainer = {
+    hidden: {},
+    visible: {
+      transition: { staggerChildren: 0.08, delayChildren: 0.3 },
+    },
   };
 
-  /* ============================================================
-     LOADING SKELETON CARD
-  ============================================================ */
-  const CardSkeleton = () => (
-    <div
-      className="flex h-full flex-1 flex-col overflow-hidden rounded-2xl animate-pulse"
-      style={{ backgroundColor: "#FFFFFF" }}
-    >
-      <div
-        className="h-[65%] w-full"
-        style={{ backgroundColor: `${TEAL}10` }}
-      />
-      <div className="flex flex-1 flex-col justify-center gap-2 px-4 py-4">
-        <div
-          className="h-4 rounded w-3/4"
-          style={{ backgroundColor: `${TEAL}15` }}
-        />
-        <div
-          className="h-3 rounded w-1/2"
-          style={{ backgroundColor: `${TEAL}15` }}
-        />
-      </div>
-    </div>
-  );
+  const wordVariant = {
+    hidden: { opacity: 0, y: 30, filter: "blur(8px)" },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+      transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+    },
+  };
 
   return (
     <section
-      className="relative w-full min-h-screen overflow-hidden text-[#072A26]"
-      style={{ backgroundColor: MINT }}
+      ref={sectionRef}
+      onMouseMove={handleMouseMove}
+      className="relative w-full overflow-hidden"
+      style={{ backgroundColor: INK, color: PAPER }}
     >
-      {/* ==== TOP GRADIENT ADDED WITH #019586 ==== */}
+      {/* ============ BACKGROUND IMAGE LAYER ============ */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-150"
-        style={{
-          background: `linear-gradient(to bottom, ${TEAL} 0%, transparent 100%)`,
-          opacity: 0.75,
-        }}
-      />
-
-      <div className="relative flex min-h-screen w-full flex-col lg:flex-row">
-        {/* ============ LEFT : TEXT (VERTICALLY CENTERED) ============ */}
-        <div className="relative z-20 flex w-full flex-1 flex-col justify-center px-6 pt-16 pb-8 sm:px-10 sm:pt-20 sm:pb-10 md:pt-0 md:py-32 lg:w-[44%] lg:flex-none lg:py-25 lg:pl-14 lg:pr-8">
-          {/* Tag pill */}
-          <span
-            className="w-fit rounded-full px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.2em] shadow-md sm:text-[11px]"
-            style={{
-              backgroundColor: TEAL,
-              color: MINT,
+        ref={bgRef}
+        className="absolute inset-0 will-change-transform"
+        style={{ height: "120%", top: "-10%" }}
+      >
+        {/* Ken Burns slider — each image zooms + pans while visible */}
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={currentImageIndex}
+            initial={{ opacity: 0, scale: 1.0 }}
+            animate={{
+              opacity: 1,
+              scale: 1.12,
+              x: "2%",
+              y: "-1%",
             }}
+            exit={{ opacity: 0, scale: 1.0, transition: { duration: 1.2 } }}
+            transition={{
+              opacity: { duration: 1.4, ease: "easeInOut" },
+              scale: { duration: 6, ease: "linear" },
+              x: { duration: 6, ease: "linear" },
+              y: { duration: 6, ease: "linear" },
+            }}
+            className="absolute inset-0"
           >
-            ( Find Your Place )
-          </span>
+            <Image
+              src={heroImages[currentImageIndex]}
+              alt={`Property ${currentImageIndex + 1}`}
+              fill
+              unoptimized
+              priority={currentImageIndex === 0}
+              className="object-cover"
+              sizes="100vw"
+            />
+          </motion.div>
+        </AnimatePresence>
 
-          {/* Main Heading */}
-          <h1 className="mt-6 text-[40px] font-extrabold leading-[1.08] tracking-[-0.03em] sm:text-5xl md:text-6xl xl:text-[58px]">
-            <span style={{ color: DARK }}>Discover Your</span>
-            <br />
-            <span style={{ color: TEAL }}>
-              Dream Home
-            </span>{" "}
-            <span style={{ color: DARK }}>Today</span>
-          </h1>
+        {/* Cinematic gradients — single neutral tone shift, no hue gradient */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(180deg, rgba(10,26,47,0.55) 0%, rgba(10,26,47,0.35) 40%, rgba(10,26,47,0.85) 100%)`,
+          }}
+        />
+        {/* Left-side darkening for text legibility */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(90deg, rgba(10,26,47,0.85) 0%, rgba(10,26,47,0.4) 45%, transparent 70%)`,
+          }}
+        />
+      </div>
 
-          {/* Divider (Solid Color) */}
-          <div
-            className="mt-8 h-0.75 w-24 sm:w-32 md:w-36 rounded-full"
-            style={{ backgroundColor: TEAL }}
-          />
-
-          {/* Paragraph */}
-          <p
-            className="mt-6 sm:mt-8 max-w-[320px] sm:max-w-90 md:max-w-100 text-justify text-[13px] font-medium leading-6 sm:text-sm"
-            style={{ color: `${DARK}CC` }}
-          >
-            Handpicked properties in prime locations — built for comfort, luxury,
-            and everyday living.
-          </p>
-
-          {/* CTA row */}
-          <div className="mt-8 sm:mt-9 flex flex-wrap items-center gap-4 sm:gap-6">
-            <Link
-              href="/properties"
-              className="group flex w-fit items-center gap-3 sm:gap-4 rounded-full py-2.5 pl-6 sm:pl-7 pr-2 sm:pr-2.5 shadow-[0_12px_30px_-10px_rgba(1,149,134,0.6)] transition-all duration-300 hover:-translate-y-0.5"
-              style={{
-                backgroundColor: TEAL,
-                color: "#FFFFFF",
-              }}
+      {/* ============ CONTENT ============ */}
+      <div
+        ref={contentRef}
+        className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10 pt-32 pb-16 md:pt-40 lg:pt-48 lg:pb-24"
+      >
+        <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+          {/* ===== LEFT : TEXT ===== */}
+          <div className="flex flex-col">
+            {/* Eyebrow */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              <span className="text-xs sm:text-sm font-extrabold">View Properties</span>
-              <span
-                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-transform duration-300 group-hover:translate-x-1"
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  color: TEAL,
-                }}
+              <TemplateLabel
+                title="Eyebrow"
+                description="Quiet context line above the headline. One accent dot, sentence case, fading in on load."
               >
-                <ArrowRight size={14} strokeWidth={2.5} className="sm:hidden" />
-                <ArrowRight size={16} strokeWidth={2.5} className="hidden sm:block" />
-              </span>
-            </Link>
+                <div className="flex items-center gap-2">
+                  <motion.span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: ACCENT_SOFT }}
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{
+                      duration: 2.4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <span
+                    className="text-[13px] font-medium tracking-wide"
+                    style={{ color: "#DBEAFE" }}
+                  >
+                    Curated property listings
+                  </span>
+                </div>
+              </TemplateLabel>
+            </motion.div>
 
-            <Link
-              href="https://calendar.app.google/zf9eeGFTRRb44AKU6"
-              className="border-b-2 pb-1 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.18em] transition-colors"
-              style={{
-                color: TEAL,
-                borderColor: `${TEAL}50`,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = GREEN;
-                e.currentTarget.style.borderColor = GREEN;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = TEAL;
-                e.currentTarget.style.borderColor = `${TEAL}50`;
-              }}
+            {/* Headline — split-word reveal */}
+            <motion.h1
+              variants={headlineContainer}
+              initial="hidden"
+              animate="visible"
+              className="mt-5 text-[40px] font-semibold leading-[1.04] tracking-tight sm:text-5xl lg:text-[60px]"
             >
-              ( Book A Consultation )
-            </Link>
+              {/* Line 1 */}
+              <span className="block" style={{ color: "#FFFFFF" }}>
+                {words1.map((word, i) => (
+                  <span
+                    key={`l1-${i}`}
+                    className="inline-block overflow-hidden align-top mr-[0.22em]"
+                  >
+                    <motion.span variants={wordVariant} className="inline-block">
+                      {word}
+                    </motion.span>
+                  </span>
+                ))}
+              </span>
+              {/* Line 2 — accent */}
+              <span className="block" style={{ color: "#93C5FD" }}>
+                {words2.map((word, i) => (
+                  <span
+                    key={`l2-${i}`}
+                    className="inline-block overflow-hidden align-top mr-[0.22em]"
+                  >
+                    <motion.span variants={wordVariant} className="inline-block">
+                      {word}
+                    </motion.span>
+                  </span>
+                ))}
+              </span>
+            </motion.h1>
+
+            {/* Supporting copy */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.9, ease: "easeOut" }}
+            >
+              <TemplateLabel
+                title="Supporting copy"
+                description="One or two plain sentences under the headline. Left aligned, weight 400. Fades in after the headline resolves."
+              >
+                <p
+                  className="mt-6 max-w-md text-[16px] font-normal leading-[1.65]"
+                  style={{ color: "rgba(243,246,251,0.78)" }}
+                >
+                  Handpicked homes in neighborhoods worth knowing. Tour any
+                  listing this week — a walkthrough, no pressure.
+                </p>
+              </TemplateLabel>
+            </motion.div>
+
+            {/* CTA row */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 1.05, ease: "easeOut" }}
+            >
+              <div className="mt-8 flex flex-wrap items-center gap-5 sm:gap-7">
+                <TemplateLabel
+                  title="Primary CTA"
+                  description="Magnetic primary call-to-action. Solid ink fill, accent arrow chip, pulls subtly toward the cursor on hover."
+                >
+                  <MagneticButton>
+                    <Link
+                      href="/properties"
+                      className="group inline-flex items-center gap-3 rounded-full py-3 pl-6 pr-2"
+                      style={{ backgroundColor: "#FFFFFF", color: INK }}
+                    >
+                      <span className="text-[14px] font-semibold">
+                        Browse listings
+                      </span>
+                      <span
+                        className="flex h-8 w-8 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5"
+                        style={{ backgroundColor: ACCENT, color: "#FFFFFF" }}
+                      >
+                        <ArrowRight size={16} strokeWidth={2} />
+                      </span>
+                    </Link>
+                  </MagneticButton>
+                </TemplateLabel>
+
+                <TemplateLabel
+                  title="Secondary CTA"
+                  description="Lower-commitment alternative. Quiet text link with an underline that shifts color on hover."
+                >
+                  <Link
+                    href="https://calendar.app.google/zf9eeGFTRRb44AKU6"
+                    className="group inline-flex items-center gap-1.5 border-b pb-1 text-[13px] font-medium transition-colors"
+                    style={{
+                      color: "#DBEAFE",
+                      borderColor: "rgba(219,234,254,0.4)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#FFFFFF";
+                      e.currentTarget.style.borderColor = "#FFFFFF";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#DBEAFE";
+                      e.currentTarget.style.borderColor = "rgba(219,234,254,0.4)";
+                    }}
+                  >
+                    Book a walkthrough
+                    <ArrowRight
+                      size={13}
+                      strokeWidth={2}
+                      className="transition-transform group-hover:translate-x-0.5"
+                    />
+                  </Link>
+                </TemplateLabel>
+              </div>
+            </motion.div>
           </div>
 
-          {/* Social proof */}
-          {/* <Link
-            href="/testimonials"
-            className="group mt-8 sm:mt-9 flex w-fit items-center gap-3 sm:gap-4"
+          {/* ===== RIGHT : SLIDER INDEX + FEATURED CARDS ===== */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.6 }}
+            className="relative hidden lg:block"
           >
-            <div className="flex -space-x-2 sm:-space-x-3">
-              {heroImages.slice(0, 3).map((src, i) => (
-                <div
-                  key={i}
-                  className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-full shadow-md"
-                  style={{ border: `2px solid #FFFFFF` }}
-                >
-                  <Image
-                    src={src}
-                    alt={`Happy homeowner ${i + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="40px"
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-col">
-              <span
-                className="flex items-center gap-1 text-xs sm:text-sm font-extrabold"
-                style={{ color: DARK }}
-              >
-                4.9 <Star size={12} className="fill-[#FFC107] text-[#FFC107] sm:hidden" />
-                <Star size={14} className="fill-[#FFC107] text-[#FFC107] hidden sm:block" />
-              </span>
-              <span className="text-[10px] sm:text-xs" style={{ color: `${DARK}A0` }}>
-                12k+ happy homeowners
-              </span>
-            </div>
-            <span
-              className="ml-1 border-b-2 border-transparent pb-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.18em] transition-colors group-hover:border-[#FFC107]"
-              style={{ color: TEAL }}
+            {/* Slider index — top right, vertical */}
+            <TemplateLabel
+              title="Hero slider"
+              description="Full-bleed background image rotates every 5s with a slow Ken Burns zoom-pan. Vertical index counter on the right marks the active slide."
+              position="left"
             >
-              ( Testimonials )
-            </span>
-          </Link> */}
-        </div>
-
-        {/* ============ RIGHT : PROPERTY GALLERY ============ */}
-        {/* Mobile/Tablet: Visible and stacked below text */}
-        {/* Desktop: Absolute positioned with overlap */}
-        <div className="relative w-full flex-1 md:hidden">
-          {/* Mobile/Tablet Gallery Layout */}
-          <div className="relative w-full h-150 sm:h-170 px-6 pb-10 sm:px-10">
-            {/* Main Slider */}
-            <div className="relative h-[55%] w-full mb-5 sm:mb-6">
-              <div
-                className="group relative h-full w-full overflow-hidden rounded-2xl"
-                style={{
-                  boxShadow: `0 30px 70px -20px ${TEAL}40`,
-                  border: `1px solid #FFFFFF50`,
-                }}
-              >
-                {heroImages.map((img, index) => (
+              <div className="absolute -top-2 right-0 flex flex-col gap-2.5">
+                {heroImages.map((_, i) => (
                   <div
-                    key={index}
-                    className={`absolute inset-0 transition-opacity duration-1200 ease-in-out ${
-                      index === currentImageIndex ? "opacity-100" : "opacity-0"
-                    }`}
+                    key={i}
+                    className="flex items-center gap-2"
                   >
-                    <Image
-                      src={img}
-                      alt={`Property exterior ${index + 1}`}
-                      fill
-                      priority={index === 0}
-                      loading={index === 0 ? "eager" : "lazy"}
-                      className="object-cover transition-transform duration-2000 group-hover:scale-105"
-                      sizes="100vw"
+                    <span
+                      className="text-[11px] font-medium tabular-nums"
+                      style={{
+                        color: i === currentImageIndex ? "#FFFFFF" : "rgba(255,255,255,0.4)",
+                      }}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div
+                      className="h-px transition-all duration-500"
+                      style={{
+                        width: i === currentImageIndex ? "32px" : "16px",
+                        backgroundColor:
+                          i === currentImageIndex ? "#93C5FD" : "rgba(255,255,255,0.25)",
+                      }}
                     />
                   </div>
                 ))}
-
-                {/* Floating badge */}
-                <div
-                  className="absolute right-4 top-4 flex items-center gap-2 rounded-full px-3 py-1.5 shadow-lg backdrop-blur-md sm:right-5 sm:top-5 sm:px-4 sm:py-2"
-                  style={{
-                    backgroundColor: `${MINT}E6`,
-                    color: TEAL,
-                  }}
-                >
-                  <span
-                    className="h-2 w-2 animate-pulse rounded-full"
-                    style={{ backgroundColor: GREEN }}
-                  />
-                </div>
-
-                {/* Building icon */}
-                <div
-                  className="absolute left-4 bottom-4 flex items-center gap-2 rounded-full px-3 py-1.5 backdrop-blur-md sm:left-5 sm:bottom-5 sm:px-4 sm:py-2"
-                  style={{
-                    backgroundColor: `${TEAL}E6`,
-                    color: MINT,
-                  }}
-                >
-                  <Building2 size={14} />
-                  <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.15em]">
-                    Premium Listings
-                  </span>
-                </div>
               </div>
-            </div>
+            </TemplateLabel>
 
-            {/* Progress Bar */}
-            <div className="flex items-center justify-center gap-3 sm:gap-4 mb-5 sm:mb-6">
-              <span className="text-base sm:text-lg font-extrabold" style={{ color: TEAL }}>
-                {String(currentImageIndex + 1).padStart(2, "0")}
-              </span>
-              <div
-                className="relative h-0.75 w-28 sm:w-40 overflow-hidden rounded-full"
-                style={{ backgroundColor: "#014D41" }}
+            {/* Floating featured property card — real API data, mouse-parallax */}
+            {!propertiesLoading && properties[0] && (
+              <motion.div
+                style={{ x: cardX, y: cardY }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 1.2, ease: "easeOut" }}
+                className="absolute right-6 top-20 z-10 w-60"
               >
-                <div
-                  className="absolute left-0 top-0 h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${((currentImageIndex + 1) / totalImages) * 100}%`,
-                    backgroundColor: "#FFFFFF",
-                  }}
-                />
-              </div>
-              <span className="text-base sm:text-lg font-extrabold" style={{ color: TEAL }}>
-                {String(totalImages).padStart(2, "0")}
-              </span>
-            </div>
-
-            {/* Property Cards */}
-            <div className="flex h-[calc(45%-60px)] gap-3 sm:gap-4">
-              {propertiesLoading ? (
-                <>
-                  <CardSkeleton />
-                  <CardSkeleton />
-                </>
-              ) : properties.length > 0 ? (
-                properties.map((p, i) => (
-                  <HeroPropertyCard key={p._id} property={p} index={i} />
-                ))
-              ) : (
-                <>
-                  <div
-                    className="flex h-full flex-1 flex-col rounded-2xl"
+                <TemplateLabel
+                  title="Featured property"
+                  description="A real listing from the properties API, with mouse-parallax drift. Save (heart) toggles local state."
+                  position="bottom"
+                >
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    className="overflow-hidden rounded-2xl"
                     style={{
-                      backgroundColor: "#FFFFFF",
-                      border: `1px solid ${TEAL}20`,
+                      backgroundColor: CARD,
+                      border: `1px solid ${LINE}`,
+                      boxShadow: `0 30px 60px -20px rgba(0,0,0,0.5)`,
                     }}
                   >
-                    <div className="flex flex-1 flex-col justify-center items-center px-4">
-                      <Building2 size={32} style={{ color: TEAL }} />
-                      <span className="mt-3 text-sm font-extrabold text-center" style={{ color: DARK }}>
-                        No Properties Available
-                      </span>
-                    </div>
-                  </div>
-                  <div
-                    className="flex h-full flex-1 flex-col rounded-2xl"
-                    style={{
-                      backgroundColor: "#FFFFFF",
-                      border: `1px solid ${TEAL}20`,
-                    }}
-                  >
-                    <div className="flex flex-1 flex-col justify-center items-center px-4">
-                      <Crown size={32} style={{ color: GREEN }} />
-                      <span className="mt-3 text-sm font-extrabold text-center" style={{ color: DARK }}>
-                        Featured Soon
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Gallery Layout (md and above) - Original Design */}
-        <div className="relative hidden md:block md:h-160 lg:h-auto lg:flex-1 lg:ml-[-10%]">
-          {/* ---------- MAIN LARGE IMAGE (top + side margins) ---------- */}
-          <div className="absolute left-0 right-4 bottom-16 top-16 md:right-6 md:top-20 lg:bottom-20 lg:top-24">
-            <div
-              className="group relative h-full w-full overflow-hidden rounded-tl-[200px] lg:rounded-tl-[300px] rounded-2xl"
-              style={{
-                boxShadow: `0 30px 70px -20px ${TEAL}40`,
-                border: `1px solid #FFFFFF50`,
-              }}
-            >
-              {heroImages.map((img, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 transition-opacity duration-1200 ease-in-out ${
-                    index === currentImageIndex ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <Image
-                    src={img}
-                    alt={`Property exterior ${index + 1}`}
-                    fill
-                    priority={index === 0}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    className="object-cover transition-transform duration-2000 group-hover:scale-105"
-                    sizes="(max-width: 1024px) 100vw, 64vw"
-                  />
-                </div>
-              ))}
-
-              {/* Floating badge */}
-              <div
-                className="absolute right-4 top-4 md:right-5 md:top-5 flex items-center gap-2 rounded-full px-3 py-1.5 md:px-4 md:py-2 shadow-lg backdrop-blur-md"
-                style={{
-                  backgroundColor: `${MINT}E6`,
-                  color: TEAL,
-                }}
-              >
-                <span
-                  className="h-2 w-2 animate-pulse rounded-full"
-                  style={{ backgroundColor: GREEN }}
-                />
-              </div>
-
-              {/* Building icon */}
-              <div
-                className="absolute left-4 bottom-4 md:left-5 md:bottom-5 flex items-center gap-2 rounded-full px-3 py-1.5 md:px-4 md:py-2 backdrop-blur-md"
-                style={{
-                  backgroundColor: `${TEAL}E6`,
-                  color: MINT,
-                }}
-              >
-                <Building2 size={14} />
-                <span className="text-[9px] md:text-[10px] font-extrabold uppercase tracking-[0.15em]">
-                  Premium Listings
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* ---------- 2 REAL PROPERTY CARDS ---------- */}
-          <div className="absolute bottom-20 right-4 top-[52%] z-10 flex w-[80%] gap-3 pl-3 md:bottom-24 md:right-8 md:w-[58%] md:gap-5 md:pl-6">
-            {propertiesLoading ? (
-              <>
-                <CardSkeleton />
-                <CardSkeleton />
-              </>
-            ) : properties.length > 0 ? (
-              properties.map((p, i) => (
-                <HeroPropertyCard key={p._id} property={p} index={i} />
-              ))
-            ) : (
-              <>
-                <div
-                  className="flex h-full flex-1 flex-col rounded-2xl"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: `1px solid ${TEAL}20`,
-                  }}
-                >
-                  <div className="flex flex-1 flex-col justify-center items-center px-4">
-                    <Building2 size={32} style={{ color: TEAL }} />
-                    <span className="mt-3 text-sm font-extrabold text-center" style={{ color: DARK }}>
-                      No Properties Available
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className="flex h-full flex-1 flex-col rounded-2xl -mr-10"
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    border: `1px solid ${TEAL}20`,
-                  }}
-                >
-                  <div className="flex flex-1 flex-col justify-center items-center px-4">
-                    <Crown size={32} style={{ color: GREEN }} />
-                    <span className="mt-3 text-sm font-extrabold text-center" style={{ color: DARK }}>
-                      Featured Soon
-                    </span>
-                  </div>
-                </div>
-              </>
+                    <Link
+                      href={`/properties/${properties[0]._id}`}
+                      className="block"
+                    >
+                      <div className="relative h-32 w-full overflow-hidden">
+                        <Image
+                          src={
+                            getSafeImg(properties[0].thumbnail) ||
+                            getSafeImg(properties[0].images?.[0]) ||
+                            PLACEHOLDER
+                          }
+                          alt={properties[0].title || "Property"}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                          sizes="240px"
+                        />
+                        {/* Save toggle */}
+                        <button
+                          type="button"
+                          onClick={(e) => toggleLike(properties[0]._id, e)}
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-md transition-colors"
+                          style={{ backgroundColor: "rgba(255,255,255,0.9)" }}
+                          aria-label="Save property"
+                        >
+                          <Heart
+                            size={13}
+                            className={
+                              likedIds.has(properties[0]._id)
+                                ? "fill-current"
+                                : ""
+                            }
+                            style={{
+                              color: likedIds.has(properties[0]._id)
+                                ? ACCENT
+                                : INK,
+                            }}
+                          />
+                        </button>
+                        {/* Status pill */}
+                        <div className="absolute bottom-2 left-2">
+                          <span
+                            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-medium backdrop-blur-md"
+                            style={{
+                              backgroundColor: "rgba(255,255,255,0.9)",
+                              color: INK,
+                            }}
+                          >
+                            <span
+                              className={`inline-block h-1.5 w-1.5 rounded-full ${getStatusDotColor(
+                                properties[0].status
+                              )}`}
+                            />
+                            {getStatusText(properties[0].status)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-3.5">
+                        <span
+                          className="block truncate text-[13px] font-semibold"
+                          style={{ color: INK }}
+                        >
+                          {properties[0].title || "Untitled property"}
+                        </span>
+                        <span
+                          className="mt-1 flex items-center gap-1 text-[11px]"
+                          style={{ color: MUTED }}
+                        >
+                          <MapPin size={11} style={{ color: ACCENT }} />
+                          <span className="truncate">
+                            {properties[0].location ||
+                              properties[0].city ||
+                              "Location"}
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </motion.div>
+                </TemplateLabel>
+              </motion.div>
             )}
-          </div>
 
-          {/* ---------- BOTTOM BAR : 01 —— 05 (White Color) ---------- */}
-          <div className="absolute inset-x-0 bottom-0 flex h-14 items-center pr-5 md:h-16 md:pr-10">
-            <div className="flex items-center gap-3 md:gap-4 pl-1">
-              <span className="text-base md:text-lg font-extrabold" style={{ color: TEAL }}>
-                {String(currentImageIndex + 1).padStart(2, "0")}
-              </span>
-              <div
-                className="relative h-0.75 w-32 md:w-40 lg:w-56 overflow-hidden rounded-full"
-                style={{ backgroundColor: "#014D41" }}
+            {/* Second floating card — price snapshot, deeper parallax */}
+            {!propertiesLoading && properties[1] && (
+              <motion.div
+                style={{ x: card2X, y: card2Y }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 1.4, ease: "easeOut" }}
+                className="absolute -bottom-6 left-0 z-10 w-48"
               >
-                <div
-                  className="absolute left-0 top-0 h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${((currentImageIndex + 1) / totalImages) * 100}%`,
-                    backgroundColor: "#FFFFFF",
-                  }}
-                />
-              </div>
-              <span className="text-base md:text-lg font-extrabold" style={{ color: TEAL }}>
-                {String(totalImages).padStart(2, "0")}
-              </span>
+                <TemplateLabel
+                  title="Featured property"
+                  description="A second real listing with a deeper parallax factor, so the two cards drift at different rates as the cursor moves."
+                  position="top"
+                >
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    className="overflow-hidden rounded-xl"
+                    style={{
+                      backgroundColor: CARD,
+                      border: `1px solid ${LINE}`,
+                      boxShadow: `0 30px 60px -20px rgba(0,0,0,0.5)`,
+                    }}
+                  >
+                    <Link
+                      href={`/properties/${properties[1]._id}`}
+                      className="block"
+                    >
+                      <div className="relative h-24 w-full overflow-hidden">
+                        <Image
+                          src={
+                            getSafeImg(properties[1].thumbnail) ||
+                            getSafeImg(properties[1].images?.[0]) ||
+                            PLACEHOLDER
+                          }
+                          alt={properties[1].title || "Property"}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                          sizes="200px"
+                        />
+                      </div>
+                      <div className="p-3">
+                        <span
+                          className="block truncate text-[12px] font-semibold"
+                          style={{ color: INK }}
+                        >
+                          {properties[1].title || "Untitled property"}
+                        </span>
+                        <span
+                          className="mt-1 flex items-center gap-1 text-[10px]"
+                          style={{ color: MUTED }}
+                        >
+                          <MapPin size={10} style={{ color: ACCENT }} />
+                          <span className="truncate">
+                            {properties[1].location ||
+                              properties[1].city ||
+                              "Location"}
+                          </span>
+                        </span>
+                      </div>
+                    </Link>
+                  </motion.div>
+                </TemplateLabel>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* ============ STATS STRIP — count-up on enter ============ */}
+        <motion.div
+          ref={statsRef}
+          initial={{ opacity: 0, y: 20 }}
+          animate={statsInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="mt-20 border-t pt-8 sm:mt-24"
+          style={{ borderColor: "rgba(255,255,255,0.12)" }}
+        >
+          <TemplateLabel
+            title="Trust stats"
+            description="Three credibility numbers as a full-width strip. Each count-ups from zero when the strip scrolls into view. Tabular figures keep digits aligned."
+          >
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-0">
+              {STATS.map((s, i) => (
+                <StatItem key={i} stat={s} inView={statsInView} index={i} />
+              ))}
             </div>
+          </TemplateLabel>
+        </motion.div>
+      </div>
+
+      {/* Scroll cue */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.8, duration: 1 }}
+        className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 lg:block"
+      >
+        <div className="flex flex-col items-center gap-2">
+          <span
+            className="text-[10px] font-medium tracking-wide"
+            style={{ color: "rgba(255,255,255,0.5)" }}
+          >
+            Scroll
+          </span>
+          <div className="flex h-8 w-5 items-start justify-center rounded-full p-1" style={{ border: "1px solid rgba(255,255,255,0.25)" }}>
+            <motion.span
+              className="h-1.5 w-1 rounded-full"
+              style={{ backgroundColor: "#93C5FD" }}
+              animate={{ y: [0, 10, 0], opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            />
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
+
+// ============================================
+// STAT ITEM — count-up display
+// ============================================
+const StatItem = ({ stat, inView, index }) => {
+  const current = useCountUp(parseFloat(stat.raw), inView, 1400 + index * 150);
+  const decimals = stat.decimals || 0;
+  const display = current.toFixed(decimals);
+
+  return (
+    <div
+      className={`flex flex-col ${
+        index > 0 ? "sm:border-l sm:pl-8" : ""
+      } ${index < STATS.length - 1 ? "sm:pr-8" : ""}`}
+      style={{ borderColor: "rgba(255,255,255,0.12)" }}
+    >
+      <span
+        className="text-[34px] font-semibold leading-none tabular-nums sm:text-[40px]"
+        style={{ color: "#FFFFFF" }}
+      >
+        {display}
+        <span style={{ color: "#93C5FD" }}>{stat.suffix}</span>
+      </span>
+      <span
+        className="mt-2.5 text-[12px] font-medium"
+        style={{ color: "rgba(255,255,255,0.6)" }}
+      >
+        {stat.label}
+      </span>
+    </div>
+  );
+};

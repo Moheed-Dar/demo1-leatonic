@@ -1,147 +1,256 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Quote, Star, ChevronLeft, ChevronRight, MessageCircle } from "lucide-react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ChevronLeft, ChevronRight, Quote, Star } from "lucide-react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 // ============================================
-// SAME 3-COLOR SCHEME AS HERO & ABOUT
+// BLUE SCHEME — matches Hero / About
 // ============================================
-const TEAL = "#019586";
-const GREEN = "#00B777";
-const MINT = "#B1F1E9";
-const DARK = "#072A26";
+const INK = "#0A1A2F";
+const PAPER = "#F3F6FB";
+const ACCENT = "#1D4ED8";
+const ACCENT_DK = "#1E3A8A";
+const ACCENT_SOFT = "#DBEAFE";
+const ACCENT_LT = "#93C5FD";
+const LINE = "#DCE3EE";
+const MUTED = "#56697E";
+const CARD = "#FFFFFF";
 
+// ============================================
+// BACKGROUND IMAGE — full-bleed parallax
+// ============================================
+const BG_IMAGE =
+  "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=2400&auto=format&fit=crop";
+
+// ============================================
+// RICH HOVER LABEL — fixed, self-contained
+// ============================================
+const TemplateLabel = ({ children, title, description, position = "top" }) => {
+  let posClass = "";
+  if (position === "top") {
+    posClass =
+      "top-0 left-1/2 -translate-x-1/2 -translate-y-2 group-hover/tl:-translate-y-full";
+  } else if (position === "bottom") {
+    posClass =
+      "bottom-0 left-1/2 -translate-x-1/2 translate-y-2 group-hover/tl:translate-y-full";
+  } else if (position === "left") {
+    posClass =
+      "top-1/2 right-full -translate-y-1/2 translate-x-2 group-hover/tl:-translate-y-1/2 group-hover/tl:translate-x-0 mr-3";
+  } else if (position === "right") {
+    posClass =
+      "top-1/2 left-full -translate-y-1/2 -translate-x-2 group-hover/tl:-translate-y-1/2 group-hover/tl:translate-x-0 ml-3";
+  }
+
+  return (
+    <div className="group/tl relative">
+      {children}
+      <div
+        className={`pointer-events-none absolute z-50 ${posClass} opacity-0 transition-all duration-300 group-hover/tl:opacity-100`}
+      >
+        <div className="w-60 rounded-xl bg-black/95 p-3 shadow-2xl backdrop-blur-md">
+          <div
+            className="text-[10px] font-semibold tracking-wide"
+            style={{ color: ACCENT_LT }}
+          >
+            {title}
+          </div>
+          <div className="mt-1 text-[10px] leading-snug text-white/75">
+            {description}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// TESTIMONIALS
+// ============================================
 const testimonials = [
-  { id: 1, name: "Erin", text: "Being a military spouse, I have 4 moves under my belt. But when it came time to help my mother sell her house, I wasn't as certain. Christopher Ryan was wonderful, and definitely went above and beyond for us. Compared to the previous realtors we had worked with, Christopher Ryan definetly stands out, and I will recommend her every time someone is looking for a realtor." },
-  { id: 2, name: "Glenn", text: "Christopher Ryan was friendly and helpful, and made the home buying process a charm!" },
-  { id: 3, name: "Laurie", text: "Christopher Ryan worked patiently with us as we searched for, and found , a great home in neighborhoods with very few listings, and at a good price as well. Then she turned around and sold our existing home in a couple of days. Great knowledge of all things real estate." },
-  { id: 4, name: "Josh & Meghan", text: "When buying your first home Christopher Ryan is the realtor best suited for the job. Christopher Ryan gets to know her clients and is able to pick out homes that will suit you best. She really knows the areas of Northern Virginia well and is flexible with her time in order to book viewings when it suits you best. She is knowledgeable and we were able to understand the process of buying a home with her expertise. You'd be mistaken to not use Christopher Ryan for your future home buying needs!" },
-  { id: 5, name: "Nicole Schenk", text: "I've had the pleasure of working with Christopher Ryan for a few years, and I am consistently impressed by her dedication to her clients. Christopher Ryan excels in providing a seamless experience for both sellers and buyers, ensuring that every transaction is smooth and stress-free. She takes the time to listen to her clients' needs and preferences, offering personalized and reliable service that is second to none. Her extensive knowledge of the Northern Virginia real estate market is truly impressive, and it is clear that she is passionate about helping her clients achieve their goals. Christopher Ryan is a true professional, and I highly recommend her to anyone looking to buy or sell property in the Northern Virginia area." },
-  { id: 6, name: "Noah", text: "Christopher Ryan helped me buy my first home and I'm so very happy with everything she did for me! She was very helpful and patient despite me being picky and not having clear requirements and set search parameters. She made the whole looking and buying process painless and as comfortable and understandable as possible. Christopher Ryan is such a friendly and informative resource that I would recommend to anyone wanting to navigate the real estate market. I always looked forward to any house visits that Christopher Ryan seamlessly set up for me some on same day short notice!" },
-  { id: 7, name: "Dave Graham", text: "Simply put Christopher Ryan is the best. Super patient, knowledgeable and proactive and always reachable for questions, showings, offers etc etc. We are very picky and didn't know if we would find the right place but Christopher Ryan hung in there for the journey with us! Thanks again Christopher Ryan for everything you've done." },
-  { id: 8, name: "Cathy", text: "Christopher Ryan went above and beyond in her work with me. I was selling a property located five hours from my current location, which had its challenges. Christopher Ryan helped me to manage the logistics of selling a property remotely. She was, at all times, friendly, informative and, above all, knowledgeable and compassionate. I highly recommend her services!" },
-  { id: 9, name: "Kathryn Graham", text: "Christopher Ryan was wonderful. She kept me well informed as to what was happening in the real estate market and then found me the place I wanted to be. I'll never move again! Christopher Ryan was friendly and patient and helped me decide what I wanted in my new home Kudos Christopher Ryan!" },
-  { id: 10, name: "Daniel P", text: "Christopher Ryan was amazing since the day I landed in Canada. She treated me like I was her best client since the beginning. Her good humor and patience make the process of finding a home much more enjoyable. I highly recommended her!" },
-  { id: 11, name: "Kirby Chan", text: "Christopher Ryan is an amazing Realtor. She's a senior graduate of our social media program. She has all the social media tools to support buyers in finding off market homes and support sellers in promoting their homes to a wide audience!!!" },
-  { id: 12, name: "Sandip", text: "This real estate agent will be there for you when you need guidance and support. She is very prompt and responsive on email and text and will call or meet you in person if that's needed. She is a very good listener and has empathy. She has lots of connections in the trades and financial industry. She really goes the extra mile and has passion for what she does. And we sold my house in a spring 2023 market for well above asking. We had a bidding war and a back up offer all which were managed with the above mentioned qualities. She cares and it shows. You need to connect with her if you are in the market." },
-  { id: 13, name: "Mark", text: "Christopher Ryan is awesome! Her help was instrumental in me being able to find the right house. Very friendly, knowledgeable and responsive!" },
-  { id: 14, name: "Shane", text: "Christopher Ryan is an incredible realtor! This is the second time she's helped us with a house and I'm sure it won't be the last. She got us a good price at an uncertain time. Can't say enough good things about her!" },
-  { id: 15, name: "Sandip", text: "Amazing experience! She was easily able to understand my needs. She is one of the most reliable people I have met! She was my rock during my perfect home search. Also, very knowledgeable for a home in the country. Very accommodating! I always look for an agent that is on the ball so I can get the best deal and Christopher Ryan definitely exceeded my expectations. Highly, highly recommend!" },
-  { id: 16, name: "Karen", text: "Christopher Ryan was recommended to me by a friend two years ago when I arrived in Northern Virginia from the Niagara region. Christopher Ryan spent a lot of time with me helping me find a wonderful house to call home. Two years later and a relocation back to Niagara, Christopher Ryan was there every step of the way assisting me in providing suggestions that would allow me to sell my home quickly and for a favourable price. Christopher Ryan went over and above her responsibility as a realtor and provided tremendous support during a time that can be very stressful. I feel very lucky to have met her and would highly recommend her services" },
-  { id: 17, name: "Soormee Robin", text: "I stumbled across Christopher Ryan, at the beginning of my house-search, and I now considerate it to be a divine accident. I reached out to ask a question, to which she responded effortlessly, with the ease and lightness which is customary of her style. During our time together, I came to realize that she is a person of high integrity, always taking the extra time to address things things properly and thoroughly. She always made sure that she had done everything possible to accommodate my needs throughout all the various scenarios that we went through together, and she always seemed to have something in her (very ethical) \"bag of tricks\" to make things work. I can't recommend her service highly enough, she gave me 5-star service all the way! I'm very grateful!!" },
-  { id: 18, name: "Ann", text: "Hi, just a note to say thanks for all you have done for us throughout this process. As first time buyers, we had a lot of unanswered questions regarding the purchase of our home. Thank you for providing the answers to many of these and giving us informed advice on the homes that we visited!" },
-  { id: 19, name: "Cheyenne", text: "Christopher Ryan was a pleasure to work with! As first time Canadian homebuyers, she made the process simple and easy. She provided great resources to help us find our ideal home. We look forward to working with her again in the future!" },
-  { id: 20, name: "Sandy", text: "Christopher Ryan helped us to find our perfect home in Carleton Place, in March 2021! She was always so organized for our house tours, with: clipboards, spec sheets, and hand sanitizer! Christopher Ryan always listened to our feedback, and would use our info to update the listings she would send us! We loved working with Christopher Ryan, as I'm sure you will!" },
-  { id: 21, name: "Spencer", text: "Christopher Ryan is one of the hardest working and dedicated agents I have dealt with after buying ten houses. Christopher Ryan guided us through one of the toughest transactions I have done. The result is we live in our dream forever home." },
-  { id: 22, name: "Ken", text: "Christopher Ryan goes above and beyond in everything about selling homes!" },
-  { id: 23, name: "Suzanne", text: "Christopher Ryan helped me buy a home in Northern Virginia's Copeland Park neighbourhood in January 2021. There are very few properties on the Northern Virginia market and you have to move fast. Christopher Ryan gave me all the information I needed in a very short period of time and explained clearly how to proceed to make an offer. I could count on her at every step, before and after my offer was accepted. She always answered quickly all my questions. She is supportive, knowledgeable and professional. But there is more: she is also a great person. I highly recommend her services to friends and family." },
-  { id: 24, name: "Virginia", text: "What really sets Christopher Ryan apart is her heart. When our first offer didn't get accepted she followed up with us the next day with words of encouragement, and that really made us feel comforted. It's personal touches like this that really made the experience with her so great. For first time buyers the process can be really overwhelming and Christopher Ryan took the time to patiently walk us through each step, always willing to dig up the information we were looking for and making sure we were comfortable and informed every step of the way. We cannot thank her enough for her help with our new home!" },
+  {
+    id: 1,
+    name: "Erin",
+    role: "Sold in Hillcrest",
+    text: "As a military family with multiple moves behind us, we were nervous about helping my mother sell her house. Our agent was wonderful and went above and beyond. Compared to previous realtors we worked with, they truly stood out. I will recommend them every time someone is looking for a realtor.",
+  },
+  {
+    id: 2,
+    name: "Glenn",
+    role: "Bought in Maplewood",
+    text: "Friendly, helpful, and made the home buying process a charm! Couldn't have asked for a smoother experience from start to finish.",
+  },
+  {
+    id: 3,
+    name: "Laurie",
+    role: "Sold & bought",
+    text: "Worked patiently with us as we searched for, and found, a great home in neighborhoods with very few listings — and at a good price too. Then turned around and sold our existing home in a couple of days. Excellent knowledge of all things real estate.",
+  },
+  {
+    id: 4,
+    name: "Josh & Meghan",
+    role: "First home",
+    text: "When buying your first home, this is the realtor best suited for the job. Gets to know clients and picks homes that suit you best. Flexible with time for viewings, knowledgeable about the process, and genuinely cares. You'd be mistaken not to use them for your home buying needs!",
+  },
+  {
+    id: 5,
+    name: "Nicole",
+    role: "Repeat client",
+    text: "I've had the pleasure of working with this agent for a few years and am consistently impressed by their dedication to clients. They excel at providing a seamless experience for both sellers and buyers, ensuring every transaction is smooth and stress-free. Highly recommend!",
+  },
+  {
+    id: 6,
+    name: "Noah",
+    role: "First home",
+    text: "Helped me buy my first home and I'm so happy with everything! Patient despite me being picky and not having clear requirements. Made the whole looking and buying process painless and as comfortable as possible. Highly recommend to anyone navigating the real estate market.",
+  },
+  {
+    id: 7,
+    name: "Dave",
+    role: "Bought in Riverside",
+    text: "Simply the best. Super patient, knowledgeable, proactive, and always reachable for questions, showings, offers, and more. We are very picky and didn't know if we'd find the right place, but they hung in there for the journey with us. Thanks for everything!",
+  },
+  {
+    id: 8,
+    name: "Cathy",
+    role: "Remote sale",
+    text: "Went above and beyond. I was selling a property located five hours from my current location, which had its challenges. Helped me manage the logistics of selling remotely. Friendly, informative, knowledgeable, and compassionate throughout. Highly recommend their services!",
+  },
+  {
+    id: 9,
+    name: "Kathryn",
+    role: "Bought in Bayview",
+    text: "Wonderful from start to finish. Kept me well informed about the real estate market and then found me the place I wanted to be. Friendly, patient, and helped me decide what I wanted in my new home. I'll never move again! Kudos!",
+  },
+  {
+    id: 10,
+    name: "Daniel",
+    role: "Bought in Old Town",
+    text: "Amazing since day one. Treated me like I was their best client from the beginning. Good humor and patience make the process of finding a home much more enjoyable. Highly recommended!",
+  },
+  {
+    id: 11,
+    name: "Kirby",
+    role: "Off-market buyer",
+    text: "An amazing realtor with all the modern tools to support buyers in finding off-market homes and sellers in promoting their homes to a wide audience. Professional, tech-savvy, and results-driven.",
+  },
+  {
+    id: 12,
+    name: "Sandip",
+    role: "Sold above asking",
+    text: "There for you when you need guidance and support. Prompt and responsive on email and text, will call or meet in person if needed. Great listener with empathy and strong industry connections. Sold my house above asking with a bidding war. They care and it shows.",
+  },
 ];
 
 const slideVariants = {
   enter: (direction) => ({
-    x: direction > 0 ? "100%" : "-100%",
+    x: direction > 0 ? "60%" : "-60%",
     opacity: 0,
+    scale: 0.96,
   }),
-  center: { x: 0, opacity: 1 },
+  center: { x: 0, opacity: 1, scale: 1 },
   exit: (direction) => ({
-    x: direction > 0 ? "-100%" : "100%",
+    x: direction > 0 ? "-60%" : "60%",
     opacity: 0,
+    scale: 0.96,
   }),
 };
 
 // ============================================
-// SHARED TESTIMONIAL CARD
+// SHARED TESTIMONIAL CARD — new editorial layout
 // ============================================
 const TestimonialCard = ({ t, index = 0, total = 1 }) => {
-  const avatarColors = [
-    `linear-gradient(135deg, ${TEAL}, ${GREEN})`,
-    `linear-gradient(135deg, ${DARK}, ${TEAL})`,
-    `linear-gradient(135deg, ${GREEN}, ${TEAL})`,
-    `linear-gradient(135deg, ${TEAL}, ${DARK})`,
-  ];
-  const getAvatarColor = (id) => avatarColors[(id - 1) % avatarColors.length];
-
+  // Stagger the star fill
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.08 }}
-      className="group relative flex flex-col h-full"
+      transition={{ duration: 0.5, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative flex h-full flex-col"
     >
       <div
-        className="relative rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl"
+        className="relative flex h-full flex-col overflow-hidden rounded-2xl p-6 sm:p-7 transition-all duration-300"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: `1px solid ${TEAL}20`,
-          boxShadow: `0 10px 40px -10px ${TEAL}30`,
+          backgroundColor: CARD,
+          border: `1px solid ${LINE}`,
+          boxShadow: `0 8px 30px -16px rgba(10,26,47,0.10)`,
         }}
       >
-        <div className="relative p-5 sm:p-6 md:p-7 flex flex-col flex-1">
-          {/* Decorative quote */}
-          <div className="absolute top-3 right-3 opacity-[0.07]">
-            <Quote size={total === 1 ? 72 : 52} style={{ color: TEAL }} />
-          </div>
+        {/* Decorative quote glyph — accent, low opacity */}
+        <Quote
+          size={total === 1 ? 64 : 48}
+          style={{ color: ACCENT_SOFT }}
+          className="absolute right-4 top-4 opacity-60"
+        />
 
-          {/* Stars */}
-          <div className="flex items-center gap-1 mb-4">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} size={14} className="fill-[#FFC107] text-[#FFC107]" />
-            ))}
-          </div>
-
-          {/* Quote Text */}
-          <p
-            className="text-[13px] sm:text-sm md:text-[15px] leading-relaxed relative z-10 flex-1"
-            style={{
-              color: `${DARK}CC`,
-              display: "-webkit-box",
-              WebkitLineClamp: total === 1 ? 8 : 5,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            &ldquo;{t.text}&rdquo;
-          </p>
-
-          {/* Divider */}
-          <div
-            className="w-full h-px my-4"
-            style={{
-              background: `linear-gradient(to right, transparent, ${TEAL}30, transparent)`,
-            }}
-          />
-
-          {/* Author */}
-          <div className="flex items-center gap-3">
-            <div
-              className="relative w-11 h-11 rounded-full flex items-center justify-center shrink-0 text-sm font-extrabold text-white shadow-md"
-              style={{
-                background: getAvatarColor(t.id),
-                border: `2px solid ${MINT}`,
-              }}
+        {/* Star rating — accent, staggered fill */}
+        <div className="relative mb-4 flex items-center gap-1">
+          {[...Array(5)].map((_, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 + 0.2 + i * 0.05, duration: 0.3 }}
             >
-              {t.name.charAt(0)}
-            </div>
-            <div className="min-w-0">
-              <h4 className="font-extrabold text-[14px] sm:text-[15px] truncate" style={{ color: DARK }}>
-                {t.name}
-              </h4>
-              <p className="text-[10px] sm:text-xs font-bold truncate" style={{ color: GREEN }}>
-                Verified Client
-              </p>
-            </div>
-          </div>
+              <Star size={13} fill={ACCENT} strokeWidth={0} style={{ color: ACCENT }} />
+            </motion.span>
+          ))}
         </div>
 
-        {/* Bottom accent */}
-        <div
-          className="h-1 w-full"
+        {/* Quote text */}
+        <p
+          className="relative z-10 flex-1 text-[14px] font-normal leading-[1.65] sm:text-[15px]"
           style={{
-            background: `linear-gradient(to right, ${TEAL}, ${GREEN})`,
+            color: MUTED,
+            display: "-webkit-box",
+            WebkitLineClamp: total === 1 ? 10 : 5,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {t.text}
+        </p>
+
+        {/* Hairline divider */}
+        <div
+          className="my-5 h-px w-full"
+          style={{
+            background: `linear-gradient(to right, ${LINE}, transparent)`,
           }}
         />
+
+        {/* Author */}
+        <div className="flex items-center gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold"
+            style={{
+              backgroundColor: ACCENT_SOFT,
+              color: ACCENT_DK,
+              border: `1px solid ${LINE}`,
+            }}
+          >
+            {t.name.charAt(0)}
+          </div>
+          <div className="min-w-0">
+            <h4
+              className="truncate text-[14px] font-semibold"
+              style={{ color: INK }}
+            >
+              {t.name}
+            </h4>
+            <p
+              className="truncate text-[11px] font-medium"
+              style={{ color: ACCENT_DK }}
+            >
+              {t.role}
+            </p>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
@@ -151,57 +260,67 @@ const TestimonialCard = ({ t, index = 0, total = 1 }) => {
 // REUSABLE NAV BUTTON
 // ============================================
 const NavButton = ({ onClick, disabled, icon, label }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
-    style={{
-      backgroundColor: "#FFFFFF",
-      border: `1px solid ${TEAL}40`,
-      color: TEAL,
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.backgroundColor = TEAL;
-      e.currentTarget.style.color = "#FFFFFF";
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.backgroundColor = "#FFFFFF";
-      e.currentTarget.style.color = TEAL;
-    }}
-    aria-label={label}
+  <TemplateLabel
+    title="Navigation"
+    description="Previous / next button. Manually advances the carousel. Auto-rotate restarts after manual interaction."
   >
-    {icon}
-  </button>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40 hover:bg-[#0A1A2F] hover:text-white hover:border-[#0A1A2F] sm:h-11 sm:w-11"
+      style={{
+        backgroundColor: CARD,
+        borderColor: LINE,
+        color: INK,
+      }}
+      aria-label={label}
+    >
+      {icon}
+    </button>
+  </TemplateLabel>
 );
 
 // ============================================
-// REUSABLE PROGRESS BAR
+// PROGRESS COUNTER — fixed h-[3px]
 // ============================================
 const ProgressCounter = ({ current, total }) => (
-  <div className="flex items-center gap-3 sm:gap-4">
-    <span className="text-base sm:text-lg font-extrabold" style={{ color: TEAL }}>
-      {String(current).padStart(2, "0")}
-    </span>
-    <div
-      className="relative h-0.75 w-24 sm:w-36 md:w-48 overflow-hidden rounded-full"
-      style={{ backgroundColor: `${DARK}25` }}
-    >
+  <TemplateLabel
+    title="Progress"
+    description="Current position vs total (e.g. 03 / 12). Tabular figures keep the digits aligned as they change."
+  >
+    <div className="flex items-center gap-3 sm:gap-4">
+      <span
+        className="text-[15px] font-semibold tabular-nums sm:text-base"
+        style={{ color: INK }}
+      >
+        {String(current).padStart(2, "0")}
+      </span>
       <div
-        className="absolute left-0 top-0 h-full rounded-full transition-all duration-500"
-        style={{
-          width: `${(current / total) * 100}%`,
-          backgroundColor: TEAL,
-        }}
-      />
+        className="h-0.75 w-24 overflow-hidden rounded-full sm:w-36 md:w-48"
+        style={{ backgroundColor: LINE }}
+      >
+        <motion.div
+          className="h-full rounded-full"
+          style={{ backgroundColor: ACCENT }}
+          initial={{ width: 0 }}
+          animate={{ width: `${(current / total) * 100}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
+      <span
+        className="text-[15px] font-semibold tabular-nums sm:text-base"
+        style={{ color: MUTED }}
+      >
+        {String(total).padStart(2, "0")}
+      </span>
     </div>
-    <span className="text-base sm:text-lg font-extrabold" style={{ color: TEAL }}>
-      {String(total).padStart(2, "0")}
-    </span>
-  </div>
+  </TemplateLabel>
 );
 
 export default function TestimonialsSection() {
   const sectionRef = useRef(null);
+  const bgRef = useRef(null);
+  const headingRef = useRef(null);
   const mobileIntervalRef = useRef(null);
   const desktopIntervalRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -223,6 +342,38 @@ export default function TestimonialsSection() {
     desktopPage * cardsPerPage,
     desktopPage * cardsPerPage + cardsPerPage
   );
+
+  // ---------- GSAP SCROLL PARALLAX ----------
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Background drifts slower than scroll
+      gsap.to(bgRef.current, {
+        yPercent: 20,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // Headline reveal
+      gsap.from(headingRef.current, {
+        opacity: 0,
+        y: 40,
+        duration: 0.9,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: headingRef.current,
+          start: "top 85%",
+          toggleActions: "play none none none",
+        },
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
 
   // ---------- MOBILE AUTO ROTATE ----------
   const resetMobileRotate = useCallback(() => {
@@ -256,12 +407,15 @@ export default function TestimonialsSection() {
     (dir) => {
       if (desktopAnimating) return;
       setDesktopDirection(dir);
-      setDesktopPage((prev) => (prev + dir + desktopTotalPages) % desktopTotalPages);
+      setDesktopPage(
+        (prev) => (prev + dir + desktopTotalPages) % desktopTotalPages
+      );
       resetDesktopRotate();
     },
     [desktopAnimating, desktopTotalPages, resetDesktopRotate]
   );
 
+  // ---------- VISIBILITY OBSERVER ----------
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -291,89 +445,156 @@ export default function TestimonialsSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full overflow-hidden py-16 sm:py-20 lg:py-28"
+      className="relative w-full overflow-hidden py-24 sm:py-28 lg:py-32"
+      style={{ backgroundColor: PAPER, color: INK }}
     >
-      {/* ===== BACKGROUND: TOP TO BOTTOM GRADIENT (reverse of about) ===== */}
-      <div className="absolute inset-0 z-0">
+      {/* ============ ANIMATED BG IMAGE WITH PARALLAX ============ */}
+      <div
+        ref={bgRef}
+        className="absolute inset-0 will-change-transform"
+        style={{ height: "130%", top: "-15%" }}
+      >
+        <Image
+          src={BG_IMAGE}
+          alt=""
+          fill
+          unoptimized
+          className="object-cover"
+          sizes="100vw"
+        />
+        {/* Tinted overlay — keeps the section readable on top of image */}
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(180deg, ${TEAL} 0%, ${GREEN} 25%, ${MINT} 60%, ${MINT} 100%)`,
+            background: `linear-gradient(180deg, ${PAPER}F2 0%, ${PAPER}E6 50%, ${PAPER}F2 100%)`,
           }}
         />
+        {/* Subtle accent radial — single, quiet, top right */}
         <div
-          className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-20 blur-3xl"
-          style={{ background: `radial-gradient(circle, ${GREEN} 0%, transparent 70%)` }}
-        />
-        <div
-          className="absolute -bottom-20 -left-20 w-96 h-96 rounded-full opacity-[0.15] blur-3xl"
-          style={{ background: `radial-gradient(circle, ${TEAL} 0%, transparent 70%)` }}
-        />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, ${DARK} 1px, transparent 0)`,
-            backgroundSize: "40px 40px",
+            background: `radial-gradient(circle at 85% 15%, rgba(29,78,216,0.08) 0%, transparent 50%)`,
           }}
         />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ===== Header ===== */}
+      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10">
+        {/* ===== HEADER — left aligned, controls inline on desktop ===== */}
         <div
-          className={`text-center mb-10 sm:mb-14 transition-all duration-700 ease-out ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          className={`mb-12 flex flex-col gap-8 transition-all duration-700 ease-out sm:mb-16 md:flex-row md:items-end md:justify-between ${
+            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
           }`}
         >
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <MessageCircle size={18} style={{ color: MINT }} />
-            <span
-              className="text-[10px] sm:text-xs uppercase tracking-[0.3em] font-extrabold"
-              style={{ color: MINT }}
+          <div className="max-w-xl">
+            {/* Eyebrow */}
+            <TemplateLabel
+              title="Eyebrow"
+              description="Quiet context label above the headline. Sentence case with one accent dot."
             >
-              Client Stories
-            </span>
-          </div>
-
-          <h2
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-extrabold leading-tight mb-4"
-            style={{ color: "#FFFFFF" }}
-          >
-            What Our Clients Say
-          </h2>
-
-          <p
-            className="text-sm sm:text-base md:text-lg max-w-xl mx-auto transition-all duration-700 delay-200 ease-out"
-            style={{ color: "#FFFFFFD9" }}
-          >
-            Nothing means more to me than helping my clients feel supported, informed, and confident throughout their move. I'm grateful for the trust they've placed in me, and I'm proud to share a few of their experiences below.
-          </p>
-        </div>
-
-        {/* ===== MOBILE CAROUSEL: 1 CARD (below md) ===== */}
-        <div className="block md:hidden">
-          <div className="relative mx-auto max-w-md">
-            <div className="relative overflow-hidden min-h-110">
-              <AnimatePresence initial={false} custom={mobileDirection} mode="popLayout">
-                <motion.div
-                  key={testimonials[mobileIndex].id}
-                  custom={mobileDirection}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                  onAnimationStart={() => setMobileAnimating(true)}
-                  onAnimationComplete={() => setMobileAnimating(false)}
-                  className="w-full"
+              <div className="mb-5 flex items-center gap-2">
+                <motion.span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: ACCENT }}
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <span
+                  className="text-[13px] font-medium"
+                  style={{ color: MUTED }}
                 >
-                  <TestimonialCard t={testimonials[mobileIndex]} total={1} />
-                </motion.div>
-              </AnimatePresence>
+                  Client stories
+                </span>
+              </div>
+            </TemplateLabel>
+
+            {/* Headline */}
+            <div ref={headingRef}>
+              <TemplateLabel
+                title="Section headline"
+                description="Two-line headline, weight 600. One phrase carries the accent color. GSAP reveals it on scroll-into-view."
+              >
+                <h2
+                  className="text-[30px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-4xl lg:text-[42px]"
+                  style={{ color: INK }}
+                >
+                  What clients say{" "}
+                  <span style={{ color: ACCENT }}>after the move</span>
+                </h2>
+              </TemplateLabel>
             </div>
 
-            {/* Mobile Nav */}
-            <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8">
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mt-5 max-w-lg text-[15px] font-normal leading-[1.6]"
+              style={{ color: MUTED }}
+            >
+              Nothing matters more than helping clients feel supported,
+              informed, and confident throughout their move. A few of their
+              experiences, in their own words.
+            </motion.p>
+          </div>
+
+          {/* Desktop nav — inline with header */}
+          <div className="hidden md:block">
+            <div className="flex items-center gap-5">
+              <NavButton
+                onClick={() => desktopPaginate(-1)}
+                disabled={desktopAnimating}
+                icon={<ChevronLeft size={18} />}
+                label="Previous"
+              />
+              <ProgressCounter
+                current={desktopPage + 1}
+                total={desktopTotalPages}
+              />
+              <NavButton
+                onClick={() => desktopPaginate(1)}
+                disabled={desktopAnimating}
+                icon={<ChevronRight size={18} />}
+                label="Next"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ===== MOBILE CAROUSEL: 1 CARD ===== */}
+        <div className="block md:hidden">
+          <div className="relative mx-auto max-w-md">
+            <TemplateLabel
+              title="Mobile carousel"
+              description="Single-card slider for small screens. Auto-rotates every 6s, manual nav with arrows. Shows the full review text."
+            >
+              {/* FIXED: min-h-[420px] (was min-h-420px — invalid Tailwind) */}
+              <div className="relative min-h-420px overflow-hidden">
+                <AnimatePresence
+                  initial={false}
+                  custom={mobileDirection}
+                  mode="popLayout"
+                >
+                  <motion.div
+                    key={testimonials[mobileIndex].id}
+                    custom={mobileDirection}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    onAnimationStart={() => setMobileAnimating(true)}
+                    onAnimationComplete={() => setMobileAnimating(false)}
+                    className="w-full"
+                  >
+                    <TestimonialCard t={testimonials[mobileIndex]} total={1} />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </TemplateLabel>
+
+            {/* Mobile nav — centered below */}
+            <div className="mt-8 flex items-center justify-center gap-4">
               <NavButton
                 onClick={() => mobilePaginate(-1)}
                 disabled={mobileAnimating}
@@ -391,11 +612,19 @@ export default function TestimonialsSection() {
           </div>
         </div>
 
-        {/* ===== DESKTOP CAROUSEL: 3 CARDS (md and above) ===== */}
+        {/* ===== DESKTOP CAROUSEL: 3 CARDS ===== */}
         <div className="hidden md:block">
-          <div className="relative">
-            <div className="relative overflow-hidden min-h-95">
-              <AnimatePresence initial={false} custom={desktopDirection} mode="popLayout">
+          <TemplateLabel
+            title="Desktop grid"
+            description="3-card grid that paginates. Auto-rotates every 7s across multiple pages. Cards show condensed text with a line clamp."
+          >
+            {/* FIXED: min-h-[340px] (was min-h-340px — invalid Tailwind) */}
+            <div className="relative min-h-340px overflow-hidden">
+              <AnimatePresence
+                initial={false}
+                custom={desktopDirection}
+                mode="popLayout"
+              >
                 <motion.div
                   key={desktopPage}
                   custom={desktopDirection}
@@ -403,7 +632,7 @@ export default function TestimonialsSection() {
                   initial="enter"
                   animate="center"
                   exit="exit"
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   onAnimationStart={() => setDesktopAnimating(true)}
                   onAnimationComplete={() => setDesktopAnimating(false)}
                   className="w-full"
@@ -416,24 +645,7 @@ export default function TestimonialsSection() {
                 </motion.div>
               </AnimatePresence>
             </div>
-
-            {/* Desktop Nav */}
-            <div className="flex items-center justify-center gap-4 sm:gap-6 mt-10">
-              <NavButton
-                onClick={() => desktopPaginate(-1)}
-                disabled={desktopAnimating}
-                icon={<ChevronLeft size={18} />}
-                label="Previous"
-              />
-              <ProgressCounter current={desktopPage + 1} total={desktopTotalPages} />
-              <NavButton
-                onClick={() => desktopPaginate(1)}
-                disabled={desktopAnimating}
-                icon={<ChevronRight size={18} />}
-                label="Next"
-              />
-            </div>
-          </div>
+          </TemplateLabel>
         </div>
       </div>
     </section>

@@ -2,22 +2,102 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 // ============================================
-// SAME 3-COLOR SCHEME AS HERO SECTION
+// BLUE SCHEME — matches Hero
 // ============================================
-const TEAL = "#019586";
-const GREEN = "#00B777";
-const MINT = "#B1F1E9";
-const DARK = "#072A26";
+const INK = "#0A1A2F";
+const PAPER = "#F3F6FB";
+const ACCENT = "#1D4ED8";
+const ACCENT_DK = "#1E3A8A";
+const ACCENT_SOFT = "#DBEAFE";
+const ACCENT_LT = "#93C5FD";
+const LINE = "#DCE3EE";
+const MUTED = "#56697E";
+const CARD = "#FFFFFF";
 
 // ============================================
-// SOCIAL ICONS - Only LinkedIn
+// BACKGROUND IMAGE — full-bleed parallax header
+// ============================================
+const BG_IMAGE =
+  "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2400&auto=format&fit=crop";
+
+const galleryImages = [
+  {
+    src: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
+    alt: "Modern property exterior",
+    meta: "Maple Street · 4 bed",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop",
+    alt: "Luxury home architecture",
+    meta: "River Road · 5 bed",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?q=80&w=1200&auto=format&fit=crop",
+    alt: "Modern villa design",
+    meta: "Hilltop Lane · 3 bed",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
+    alt: "Premium residence",
+    meta: "Bay Court · 6 bed",
+  },
+];
+
+const PORTRAIT_IMAGE =
+  "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1200&auto=format&fit=crop";
+
+// ============================================
+// RICH HOVER LABEL
+// ============================================
+const TemplateLabel = ({ children, title, description, position = "top" }) => {
+  let posClass = "";
+  if (position === "top") {
+    posClass =
+      "top-0 left-1/2 -translate-x-1/2 -translate-y-2 group-hover/tl:-translate-y-full";
+  } else if (position === "bottom") {
+    posClass =
+      "bottom-0 left-1/2 -translate-x-1/2 translate-y-2 group-hover/tl:translate-y-full";
+  } else if (position === "left") {
+    posClass =
+      "top-1/2 right-full -translate-y-1/2 translate-x-2 group-hover/tl:-translate-y-1/2 group-hover/tl:translate-x-0 mr-3";
+  } else if (position === "right") {
+    posClass =
+      "top-1/2 left-full -translate-y-1/2 -translate-x-2 group-hover/tl:-translate-y-1/2 group-hover/tl:translate-x-0 ml-3";
+  }
+
+  return (
+    <div className="group/tl relative">
+      {children}
+      <div
+        className={`pointer-events-none absolute z-50 ${posClass} opacity-0 transition-all duration-300 group-hover/tl:opacity-100`}
+      >
+        <div className="w-60 rounded-xl bg-black/95 p-3 shadow-2xl backdrop-blur-md">
+          <div
+            className="text-[10px] font-semibold tracking-wide"
+            style={{ color: "#93C5FD" }}
+          >
+            {title}
+          </div>
+          <div className="mt-1 text-[10px] leading-snug text-white/75">
+            {description}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// SOCIAL ICON - LinkedIn
 // ============================================
 const LinkedInIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -25,35 +105,147 @@ const LinkedInIcon = ({ size = 20 }) => (
   </svg>
 );
 
+// ============================================
+// FLOATING STATS BADGES — over portrait
+// ============================================
+const FLOATING_STATS = [
+  { value: "12+", label: "Years", className: "left-[-4%] top-[18%]" },
+  { value: "4.9", label: "Rating", className: "right-[-5%] top-[44%]" },
+  { value: "98%", label: "Repeat", className: "left-[-3%] bottom-[18%]" },
+];
+
+// ============================================
+// 3D TILT CARD — for gallery
+// ============================================
+const TiltCard = ({ img, index }) => {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 200, damping: 18 });
+  const sy = useSpring(y, { stiffness: 200, damping: 18 });
+  const rotateX = useTransform(sy, [-0.5, 0.5], ["6deg", "-6deg"]);
+  const rotateY = useTransform(sx, [-0.5, 0.5], ["-6deg", "6deg"]);
+
+  const handleMove = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={() => {
+        x.set(0);
+        y.set(0);
+      }}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+        perspective: 1000,
+      }}
+      whileHover={{ y: -4 }}
+      className="group relative overflow-hidden rounded-2xl"
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div
+        className="relative aspect-4/3 overflow-hidden rounded-2xl"
+        style={{
+          border: `1px solid ${LINE}`,
+          boxShadow: `0 12px 30px -16px rgba(10,26,47,0.18)`,
+        }}
+      >
+        <Image
+          src={img.src}
+          alt={img.alt}
+          fill
+          unoptimized
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 640px) 50vw, 25vw"
+        />
+        <div
+          className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background: `linear-gradient(180deg, transparent 50%, ${INK}CC 100%)`,
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-4 opacity-0 transition-all duration-300 group-hover:opacity-100"
+          style={{ transform: "translateZ(40px)" }}
+        >
+          <span className="text-[12px] font-medium" style={{ color: "#FFFFFF" }}>
+            {img.meta}
+          </span>
+          <span
+            className="flex h-7 w-7 items-center justify-center rounded-full"
+            style={{ backgroundColor: ACCENT, color: "#FFFFFF" }}
+          >
+            <ArrowUpRight size={13} />
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export default function About() {
   const sectionRef = useRef(null);
+  const bgRef = useRef(null);
+  const portraitRef = useRef(null);
+  const portraitWrapRef = useRef(null);
   const headingRef = useRef(null);
-  const imagesRef = useRef(null);
   const bioRef = useRef(null);
 
-  const images = [
-    { src: "/images/about5up.jpg", alt: "Northern Virginia Real Estate 1" },
-    { src: "/images/about1up.jpg", alt: "Northern Virginia Real Estate 2" },
-    { src: "/images/about3up.jpg", alt: "Northern Virginia Real Estate 3" },
-    { src: "/images/about2up.jpg", alt: "Northern Virginia Real Estate 4" },
-  ];
+  // Mouse parallax springs
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const statX1 = useSpring(mx, { stiffness: 60, damping: 18 });
+  const statY1 = useSpring(my, { stiffness: 60, damping: 18 });
+  const statX2 = useSpring(mx, { stiffness: 45, damping: 20 });
+  const statY2 = useSpring(my, { stiffness: 45, damping: 20 });
+  const statX3 = useSpring(mx, { stiffness: 75, damping: 15 });
+  const statY3 = useSpring(my, { stiffness: 75, damping: 15 });
+  const statPos = [statX1, statX2, statX3];
+  const statPosY = [statY1, statY2, statY3];
 
-  // Only LinkedIn social link
-  const socialLinks = [
-    {
-      icon: LinkedInIcon,
-      href: "https://www.linkedin.com/in/christopher-lepkowski/",
-      label: "LinkedIn",
-      hoverColor: TEAL,
-    },
-  ];
+  const socialLinks = [{ icon: LinkedInIcon, href: "#", label: "LinkedIn" }];
 
+  // ---------- GSAP SCROLL PARALLAX ----------
   useEffect(() => {
     const ctx = gsap.context(() => {
+      gsap.to(bgRef.current, {
+        yPercent: 25,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      gsap.to(portraitRef.current, {
+        yPercent: -12,
+        ease: "none",
+        scrollTrigger: {
+          trigger: portraitWrapRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
       gsap.from(headingRef.current, {
         opacity: 0,
-        y: 50,
-        duration: 1,
+        y: 40,
+        duration: 0.9,
         ease: "power3.out",
         scrollTrigger: {
           trigger: headingRef.current,
@@ -64,8 +256,8 @@ export default function About() {
 
       gsap.from(bioRef.current, {
         opacity: 0,
-        x: -50,
-        duration: 1,
+        y: 30,
+        duration: 0.9,
         ease: "power3.out",
         scrollTrigger: {
           trigger: bioRef.current,
@@ -78,585 +270,378 @@ export default function About() {
     return () => ctx.revert();
   }, []);
 
+  // ---------- MOUSE PARALLAX ----------
+  const handleMouseMove = (e) => {
+    const el = portraitWrapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width - 0.5;
+    const relY = (e.clientY - rect.top) / rect.height - 0.5;
+    mx.set(relX * 30);
+    my.set(relY * 30);
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
+      transition: { staggerChildren: 0.1, delayChildren: 0.1 },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 18 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.6, ease: "easeOut" },
     },
   };
-
-  const frameVariants = [
-    { rotate: -3, y: 20 },
-    { rotate: 2, y: -10 },
-    { rotate: -2, y: 15 },
-    { rotate: 3, y: -5 },
-  ];
 
   return (
     <section
       ref={sectionRef}
-      className="relative w-full overflow-hidden py-16 sm:py-24 md:py-28 lg:py-32"
+      onMouseMove={handleMouseMove}
+      className="relative w-full overflow-hidden"
+      style={{ backgroundColor: PAPER, color: INK }}
     >
-      {/* ===== BACKGROUND: BOTTOM TO TOP GRADIENT ===== */}
-      <div className="absolute inset-0 z-0">
+      {/* ============ FULL-BLEED PARALLAX HEADER ============ */}
+      <div className="relative h-[55vh] min-h-440px w-full overflow-hidden sm:h-[60vh]">
+        <div
+          ref={bgRef}
+          className="absolute inset-0 will-change-transform"
+          style={{ height: "130%", top: "-15%" }}
+        >
+          <Image
+            src={BG_IMAGE}
+            alt="Property"
+            fill
+            unoptimized
+            priority
+            className="object-cover"
+            sizes="100vw"
+          />
+        </div>
+
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(0deg, ${TEAL} 0%, ${GREEN} 25%, ${MINT} 60%, ${MINT} 100%)`,
+            background: `linear-gradient(180deg, ${INK}66 0%, ${INK}33 40%, ${PAPER} 100%)`,
           }}
         />
 
-        {/* ===== WATERMARK: navbarlogo11.png (PROPERLY VISIBLE) ===== */}
-        {/* <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url('/images/navlogo12.png')`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center center",
-            backgroundSize: "50% auto",
-            opacity: 0.15,
-            mixBlendMode: "multiply",
-          }}
-        /> */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-5 flex items-center gap-2"
+          >
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: ACCENT_LT }}
+            />
+            <span
+              className="text-[13px] font-medium"
+              style={{ color: "#DBEAFE" }}
+            >
+              About the consultant
+            </span>
+          </motion.div>
 
-        {/* Mobile pe watermark chhota */}
-        <div
-          className="absolute inset-0 pointer-events-none sm:hidden"
-          style={{
-            backgroundImage: `url('/images/navlogo12.png')`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center center",
-            backgroundSize: "75% auto",
-            opacity: 0.12,
-            mixBlendMode: "multiply",
-          }}
-        />
-
-        {/* Extra gradient overlay for depth */}
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            background: `radial-gradient(circle at 20% 80%, ${DARK} 0%, transparent 50%)`,
-          }}
-        />
+          <div ref={headingRef}>
+            <h2
+              className="mx-auto max-w-4xl text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-5xl lg:text-[56px]"
+              style={{ color: "#FFFFFF" }}
+            >
+              Real estate consulting that{" "}
+              <span style={{ color: ACCENT_LT }}>
+                puts the numbers in your hands
+              </span>{" "}
+              before the decision.
+            </h2>
+          </div>
+        </div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* "Who I Am" Label */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-6 sm:mb-8"
-        >
-          <span
-            className="inline-block rounded-full px-5 py-1.5 text-[10px] sm:text-xs uppercase tracking-[0.3em] font-extrabold shadow-md"
-            style={{
-              backgroundColor: DARK,
-              color: MINT,
-            }}
-          >
-            ( Who I Am )
-          </span>
-        </motion.div>
-
-        {/* Main Heading */}
-        <div ref={headingRef} className="text-center mb-12 sm:mb-16 md:mb-20">
-          <h2
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold leading-tight max-w-4xl mx-auto tracking-[-0.02em]"
-            style={{ color: DARK }}
-          >
-            Providing high-level{" "}
-            <span className="relative inline-block" style={{ color: DARK }}>
-              real estate consulting
-              <svg
-                className="absolute -bottom-1 left-0 w-full"
-                height="8"
-                viewBox="0 0 200 8"
-                fill="none"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M2 6C50 2 150 2 198 6"
-                  stroke={GREEN}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  opacity="0.7"
-                />
-              </svg>
-            </span>
-            , with a focus on data-driven insights, personalized service, and a{" "}
-            <span style={{ color: TEAL }}>smooth, stress-free transaction experience.</span>
-          </h2>
-        </div>
-
-        {/* Image Grid */}
-        <div
-          ref={imagesRef}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-12 sm:mb-16 md:mb-20"
-        >
-          {images.map((img, index) => (
-            <motion.div
-              key={index}
-              className="about-image relative group cursor-pointer"
-              initial={{
-                opacity: 0,
-                y: 50,
-                rotate: frameVariants[index % 4].rotate,
-              }}
-              whileInView={{
-                opacity: 1,
-                y: frameVariants[index % 4].y,
-                rotate: frameVariants[index % 4].rotate,
-              }}
-              viewport={{ once: true }}
-              transition={{
-                duration: 0.7,
-                delay: index * 0.1,
-                ease: "easeOut",
-              }}
-              whileHover={{
-                scale: 1.05,
-                rotate: 0,
-                y: -10,
-                zIndex: 10,
-                transition: { duration: 0.4, ease: "easeOut" },
-              }}
-            >
-              <div
-                className="p-2 sm:p-3 rounded-2xl shadow-lg group-hover:shadow-2xl transition-all duration-500"
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  border: `2px solid ${TEAL}30`,
-                }}
-              >
-                <div className="relative aspect-4/3 rounded-xl overflow-hidden">
-                  <Image
-                    src={img.src}
-                    alt={img.alt}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, 25vw"
-                  />
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-all duration-500"
-                    style={{ backgroundColor: TEAL }}
-                  />
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-1/3 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{
-                      background: `linear-gradient(to top, ${DARK}40, transparent)`,
-                    }}
-                  />
-                </div>
-                <div className="mt-2 sm:mt-3 text-center">
-                  <div
-                    className="w-8 sm:w-10 h-1 rounded-full mx-auto transition-colors duration-500"
-                    style={{ backgroundColor: TEAL }}
-                  />
-                </div>
-              </div>
-              <motion.div
-                className="absolute -top-1.5 sm:-top-2 left-1/2 -translate-x-1/2 w-3 h-3 sm:w-4 sm:h-4 rounded-full group-hover:scale-125 transition-all duration-300"
-                style={{ backgroundColor: `${GREEN}60` }}
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                viewport={{ once: true }}
-                transition={{
-                  delay: 0.5 + index * 0.1,
-                  type: "spring",
-                  stiffness: 200,
-                }}
-              />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Bio Section */}
+      {/* ============ MAIN CONTENT ============ */}
+      <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-10">
         <div
           ref={bioRef}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 xl:gap-20 items-center"
+          className="grid grid-cols-1 gap-12 py-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 xl:gap-24 lg:py-24"
         >
+          {/* ===== LEFT : PORTRAIT + FLOATING STATS ===== */}
+          <motion.div
+            ref={portraitWrapRef}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="relative order-1 lg:order-1"
+          >
+            <TemplateLabel
+              title="Portrait"
+              description="Portrait with GSAP scrub parallax — moves up as you scroll past. Floating stat badges drift with mouse movement at three different rates for depth."
+              position="right"
+            >
+              <div className="relative">
+                <div ref={portraitRef} className="will-change-transform">
+                  <div
+                    className="relative aspect-3/4 overflow-hidden rounded-2xl"
+                    style={{
+                      border: `1px solid ${LINE}`,
+                      boxShadow: `0 40px 80px -28px rgba(10,26,47,0.30)`,
+                    }}
+                  >
+                    <Image
+                      src={PORTRAIT_IMAGE}
+                      alt="Your Name, real estate consultant"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 90vw, 40vw"
+                    />
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background: `linear-gradient(180deg, transparent 55%, ${INK}B3 100%)`,
+                      }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+                      <p
+                        className="text-[20px] font-semibold leading-tight sm:text-[22px]"
+                        style={{ color: "#FFFFFF" }}
+                      >
+                        Your Name
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className="h-px w-6"
+                          style={{ backgroundColor: ACCENT_SOFT }}
+                        />
+                        <span
+                          className="text-[12px] font-medium"
+                          style={{ color: "#DBEAFE" }}
+                        >
+                          Real estate consultant
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating stats badges — mouse parallax at different rates */}
+                {FLOATING_STATS.map((stat, i) => (
+                  <motion.div
+                    key={i}
+                    style={{ x: statPos[i], y: statPosY[i] }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 + i * 0.12, duration: 0.5 }}
+                    className={`absolute ${stat.className} z-10`}
+                  >
+                    <div
+                      className="rounded-xl p-3.5"
+                      style={{
+                        backgroundColor: CARD,
+                        border: `1px solid ${LINE}`,
+                        boxShadow: `0 20px 40px -16px rgba(10,26,47,0.25)`,
+                      }}
+                    >
+                      <p
+                        className="text-[20px] font-semibold tabular-nums leading-none"
+                        style={{ color: INK }}
+                      >
+                        {stat.value}
+                      </p>
+                      <p
+                        className="mt-1 text-[10px] font-medium"
+                        style={{ color: MUTED }}
+                      >
+                        {stat.label}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </TemplateLabel>
+          </motion.div>
+
+          {/* ===== RIGHT : BIO ===== */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
-            className="order-2 lg:order-1"
+            className="order-2 lg:order-2"
           >
-            <motion.div variants={itemVariants} className="mb-4 sm:mb-6">
-              <span
-                className="inline-block rounded-md px-3 py-1 text-[10px] sm:text-xs uppercase tracking-[0.3em] font-bold"
-                style={{
-                  backgroundColor: DARK,
-                  color: MINT,
-                }}
+            <motion.div variants={itemVariants} className="mb-6">
+              <h3
+                className="text-[24px] font-semibold leading-tight tracking-[-0.01em] sm:text-[28px] lg:text-[32px]"
+                style={{ color: INK }}
               >
-                ( About Me )
-              </span>
+                Hi, I&apos;m <span style={{ color: ACCENT }}>Your Name</span>
+              </h3>
             </motion.div>
 
-            <motion.h3
-              variants={itemVariants}
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6 sm:mb-8 leading-tight"
-              style={{ color: "#FFFFFF" }}
-            >
-              Hi, I&apos;m{" "}
-              <span className="relative inline-block">
-                <span style={{ color: '#fffff' }}>Christopher Ryan</span>
-                <svg
-                  className="absolute -bottom-1 left-0 w-full"
-                  height="8"
-                  viewBox="0 0 200 8"
-                  fill="none"
-                  preserveAspectRatio="none"
-                >
-                  <path
-                    d="M2 6C50 2 150 2 198 6"
-                    stroke={GREEN}
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    opacity="0.6"
-                  />
-                </svg>
-              </span>
-            </motion.h3>
-
-            <motion.div
-              variants={itemVariants}
-              className="space-y-4 sm:space-y-5 text-sm sm:text-base md:text-lg leading-relaxed"
-              style={{ color: "#FFFFFF" }}
-            >
-              <p>
-                I provide real estate consulting services in the Northern Virginia Area. I offer all of my clients high-level consulting services that combine data aggregation with proprietary analytical methods while maintaining strict industry standards to ensure thorough preparation for every transaction.
-              </p>
-
-              <blockquote
-                className="border-l-4 pl-4 py-2 rounded-r-lg italic"
-                style={{
-                  borderColor: MINT,
-                  backgroundColor: `${DARK}40`,
-                  color: "#FFFFFF",
-                }}
-              >
-                "Real estate isn't just about properties — it's about people making informed decisions with confidence. My goal is to provide the strategic guidance needed to navigate today's complex market."
-              </blockquote>
-
-              <p>
-                My approach to real estate consulting goes beyond traditional methods. By leveraging data-driven insights and proprietary constraints, I provide my clients with a competitive edge in the Northern Virginia market. Whether you're buying or selling, I ensure you have all the information you need to make strategic decisions.
-              </p>
-              <p>
-                I specialize in both Seller and Buyer Agent Services. For sellers, I focus on positioning your property to attract the right buyers and maximize value. For buyers, I help you navigate the market with confidence, identifying opportunities that align with your goals and budget.
-              </p>
-              <p>
-                What sets me apart is my commitment to combining analytical rigor with personalized service. Every client receives a customized strategy that addresses their unique needs and circumstances.
-              </p>
-
-              <p className="font-extrabold" style={{ color: MINT }}>
-                Let's work together! <br /> Christopher Ryan
-              </p>
-            </motion.div>
-
-            {/* CONTACT INFO - EMAIL, PHONE & ADDRESS */}
-            <motion.div variants={itemVariants} className="mt-6 sm:mt-8">
-              <div className="flex flex-col gap-3 sm:gap-4 font-medium text-xs sm:text-sm md:text-base">
-                {/* Email - Separate Line */}
-                <a
-                  href="mailto:chris@christopherryanrealty.com"
-                  className="hover:scale-105 transition-all flex items-center gap-2 group"
-                  style={{ color: "#FFFFFF" }}
-                >
-                  <span
-                    className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg shrink-0 transition-colors"
-                    style={{
-                      backgroundColor: `${MINT}30`,
-                      border: `1px solid ${MINT}60`,
-                    }}
-                  >
-                    <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5"
-                      style={{ color: MINT }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      ></path>
-                    </svg>
-                  </span>
-                  <span className="truncate group-hover:underline" style={{ color: "#FFFFFF" }}>
-                    chris@christopherryanrealty.com
-                  </span>
-                </a>
-
-                {/* Phone - Separate Line */}
-                <a
-                  href="tel:(571) 210-1933"
-                  className="hover:scale-105 transition-all flex items-center gap-2 group"
-                  style={{ color: "#FFFFFF" }}
-                >
-                  <span
-                    className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg shrink-0 transition-colors"
-                    style={{
-                       backgroundColor: `${MINT}30`,
-                      border: `1px solid ${MINT}60`,
-                    }}
-                  >
-                    <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5"
-                      style={{ color: MINT }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                      ></path>
-                    </svg>
-                  </span>
-                  <span className="group-hover:underline" style={{ color: "#FFFFFF" }}>
-                    (571) 210-1933
-                  </span>
-                </a>
-
-                {/* Address - Separate Line */}
-                <div
-                  className="flex items-center gap-2 group"
-                  style={{ color: "#FFFFFF" }}
-                >
-                  <span
-                    className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg shrink-0 transition-colors"
-                    style={{
-                       backgroundColor: `${MINT}30`,
-                      border: `1px solid ${MINT}60`,
-                    }}
-                  >
-                    <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5"
-                      style={{ color: MINT }}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </span>
-                  <span style={{ color: "#FFFFFF" }}>
-                    11307 Stuart Mill Rd. Oakton, VA 22124
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="mt-6 sm:mt-8">
-              <p
-                className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-bold mb-3 sm:mb-4"
-                style={{ color: MINT }}
-              >
-                ( Connect With Me )
-              </p>
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                {socialLinks.map((social) => (
-                  <motion.a
-                    key={social.label}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-all duration-300"
-                    style={{
-                      backgroundColor: `${MINT}40`,
-                      border: `1px solid ${MINT}60`,
-                      color: "#FFFFFF",
-                    }}
-                    whileHover={{
-                      scale: 1.1,
-                      y: -3,
-                      backgroundColor: social.hoverColor,
-                      borderColor: social.hoverColor,
-                      color: "#FFFFFF",
-                    }}
-                    transition={{ duration: 0.2 }}
-                    aria-label={social.label}
-                  >
-                    <social.icon size={18} />
-                  </motion.a>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* ===== PROFESSIONAL PORTRAIT IMAGE DESIGN ===== */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative order-1 lg:order-2"
-          >
-            <div className="relative mx-auto max-w-md lg:max-w-none">
-              {/* Subtle background accent - just one large shape */}
+            <motion.div variants={itemVariants}>
               <div
-                className="absolute -top-8 -right-8 sm:-top-12 sm:-right-12 w-48 h-48 sm:w-64 sm:h-64 rounded-full blur-3xl opacity-30 -z-10"
-                style={{ backgroundColor: MINT }}
-              />
-
-              {/* Main Portrait Container */}
-              <div
-                className="relative aspect-3/4 rounded-2xl overflow-hidden"
-                style={{
-                  boxShadow: `
-                    0 25px 50px -12px ${DARK}80,
-                    0 10px 20px -5px ${TEAL}40
-                  `,
-                }}
+                className="space-y-5 text-[15px] font-normal leading-[1.65] sm:text-base sm:leading-[1.7]"
+                style={{ color: MUTED }}
               >
-                <Image
-                  src="/images/chirsaboutpic.png"
-                  alt="Christopher Ryan"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 90vw, (max-width: 1024px) 80vw, 45vw"
-                  priority={false}
-                />
-
-                {/* Subtle color grade overlay - professional look */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: `linear-gradient(180deg, transparent 0%, transparent 50%, ${DARK}90 100%)`,
-                  }}
-                />
-
-                {/* Very subtle teal tint for brand cohesion */}
-                <div
-                  className="absolute inset-0 opacity-[0.08]"
-                  style={{
-                    background: `linear-gradient(135deg, ${TEAL} 0%, transparent 100%)`,
-                  }}
-                />
-              </div>
-
-              {/* Thin elegant border frame - slightly offset */}
-              <div
-                className="absolute -bottom-3 -right-3 sm:-bottom-4 sm:-right-4 aspect-3/4 w-full rounded-2xl -z-10"
-                style={{
-                  border: `2px solid ${TEAL}`,
-                }}
-              />
-
-              {/* NAME PLATE - Professional Magazine Style */}
-              <motion.div
-                className="absolute left-4 right-4 sm:left-6 sm:right-6 bottom-4 sm:bottom-6 rounded-xl px-4 py-3 sm:px-5 sm:py-4 backdrop-blur-md shadow-xl"
-                style={{
-                  backgroundColor: `${DARK}E6`,
-                  border: `1px solid ${MINT}40`,
-                }}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-              >
-                <p className="text-base sm:text-lg lg:text-xl font-extrabold" style={{ color: "#FFFFFF" }}>
-                  Christopher Ryan
+                <p>
+                  I provide real estate consulting tailored to your situation.
+                  My approach combines data-driven market analysis with
+                  proprietary methods, so every transaction is prepared
+                  thoroughly and aligned with your goals.
                 </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <div
-                    className="h-0.5 w-6 sm:w-8 rounded-full"
-                    style={{ backgroundColor: GREEN }}
-                  />
-                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider" style={{ color: MINT }}>
-                    Real Estate Consultant
+
+                <blockquote
+                  className="border-l-2 py-1 pl-5"
+                  style={{ borderColor: ACCENT, color: INK }}
+                >
+                  <p className="text-[17px] font-medium leading-snug sm:text-[19px]">
+                    Real estate isn&apos;t just about properties — it&apos;s
+                    about people making informed decisions with confidence.
                   </p>
+                </blockquote>
+
+                <p>
+                  My approach goes beyond traditional methods. By leaning on
+                  data and clear constraints, I give clients a competitive edge
+                  — whether you&apos;re buying your first home or selling a
+                  long-held property.
+                </p>
+
+                <p>
+                  I work with both sellers and buyers. For sellers, I position
+                  your property to attract the right buyers and maximize value.
+                  For buyers, I help you navigate the market with confidence,
+                  identifying opportunities that fit your goals and budget.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="mt-6">
+              <p className="text-[14px] font-medium" style={{ color: ACCENT_DK }}>
+                Let&apos;s work together.
+              </p>
+              <p className="text-[13px]" style={{ color: MUTED }}>
+                Your Name
+              </p>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="mt-10">
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-[1fr_auto] sm:items-start">
+                <div className="flex flex-col gap-3">
+                  <a
+                    href="mailto:hello@yourbrand.com"
+                    className="group inline-flex items-center gap-3 text-[14px] font-medium"
+                    style={{ color: INK }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: ACCENT_SOFT, color: ACCENT_DK }}
+                    >
+                      <Mail size={15} />
+                    </span>
+                    <span className="border-b border-transparent transition-colors group-hover:border-[#0A1A2F]">
+                      hello@yourbrand.com
+                    </span>
+                  </a>
+
+                  <a
+                    href="tel:+15550001234"
+                    className="group inline-flex items-center gap-3 text-[14px] font-medium"
+                    style={{ color: INK }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: ACCENT_SOFT, color: ACCENT_DK }}
+                    >
+                      <Phone size={15} />
+                    </span>
+                    <span className="border-b border-transparent transition-colors group-hover:border-[#0A1A2F]">
+                      (555) 000-1234
+                    </span>
+                  </a>
+
+                  <div
+                    className="inline-flex items-center gap-3 text-[14px] font-medium"
+                    style={{ color: INK }}
+                  >
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: ACCENT_SOFT, color: ACCENT_DK }}
+                    >
+                      <MapPin size={15} />
+                    </span>
+                    <span>123 Main Street, City, ST 00000</span>
+                  </div>
                 </div>
-              </motion.div>
 
-              {/* Top Right Badge - Realtor Since */}
-              <motion.div
-                className="absolute -top-3 -left-3 sm:-top-4 sm:-left-4 rounded-2xl shadow-xl p-3 sm:p-4"
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  boxShadow: `0 10px 30px ${DARK}40`,
-                }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-              >
-                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: TEAL }}>
-                  Since
-                </p>
-                <p className="text-2xl sm:text-3xl font-extrabold leading-none mt-0.5" style={{ color: TEAL }}>
-                  2025
-                </p>
-              </motion.div>
-
-              {/* Top Right - Trusted Badge (minimal) */}
-              <motion.div
-                className="absolute top-4 right-4 sm:top-6 sm:right-6 rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 backdrop-blur-md flex items-center gap-1.5"
-                style={{
-                  backgroundColor: `${GREEN}E6`,
-                  border: `1px solid #FFFFFF60`,
-                }}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.7, duration: 0.5 }}
-              >
-                <svg
-                  className="w-3 h-3 sm:w-3.5 sm:h-3.5"
-                  fill="#FFFFFF"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                </svg>
-                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider" style={{ color: "#FFFFFF" }}>
-                  Trusted
-                </span>
-              </motion.div>
-
-              {/* Small accent line at bottom */}
-              <div
-                className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-20 h-1 rounded-full -z-10"
-                style={{ backgroundColor: GREEN }}
-              />
-            </div>
+                <div>
+                  <p className="mb-3 text-[12px] font-medium" style={{ color: MUTED }}>
+                    Connect
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {socialLinks.map((social) => (
+                      <a
+                        key={social.label}
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border transition-colors hover:bg-[#DBEAFE]"
+                        style={{ borderColor: LINE, color: INK, backgroundColor: CARD }}
+                        aria-label={social.label}
+                      >
+                        <social.icon size={17} />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
+
+        {/* ============ GALLERY — 3D TILT CARDS ============ */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="border-t pt-12 pb-20 sm:pt-16 lg:pb-28"
+          style={{ borderColor: LINE }}
+        >
+          <div className="mb-6 flex items-baseline justify-between">
+            <h3
+              className="text-[20px] font-semibold tracking-[-0.01em] sm:text-[22px]"
+              style={{ color: INK }}
+            >
+              Recent work
+            </h3>
+            <Link
+              href="/properties"
+              className="group inline-flex items-center gap-1 text-[13px] font-medium"
+              style={{ color: ACCENT_DK }}
+            >
+              See all listings
+              <ArrowUpRight
+                size={14}
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:gap-5 md:grid-cols-4">
+            {galleryImages.map((img, index) => (
+              <TiltCard key={index} img={img} index={index} />
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );

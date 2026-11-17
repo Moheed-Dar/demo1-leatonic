@@ -2,10 +2,58 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Phone, Menu, X, MessageCircle } from "lucide-react";
+import { Phone, Menu, X } from "lucide-react";
 import FullscreenMenu from "@/components/ui/FullscreenMenu";
 import { CONTACT_INFO } from "@/lib/constants";
+
+// ============================================
+// BLUE SCHEME — matches Hero / About / Testimonials
+// Navbar is transparent over the dark hero at top,
+// fills with INK surface once you scroll.
+// ============================================
+const INK = "#0A1A2F";
+const PAPER = "#F3F6FB";
+const ACCENT = "#1D4ED8";
+const ACCENT_SOFT = "#DBEAFE";
+const LINE = "rgba(255,255,255,0.14)";
+
+// ============================================
+// WORDMARK — text + simple mark, no placeholder image
+// ============================================
+const Wordmark = ({ onClick }) => (
+  <Link
+    href="/"
+    onClick={onClick}
+    className="group inline-flex items-center gap-2.5"
+    aria-label="Estate — home"
+  >
+    {/* Simple glyph — a house-roof mark in one solid color */}
+    <span
+      className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+      style={{ backgroundColor: ACCENT }}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 11l9-8 9 8" />
+        <path d="M5 10v10h14V10" />
+      </svg>
+    </span>
+    <span
+      className="text-[18px] font-semibold tracking-[-0.01em] transition-colors"
+      style={{ color: "#FFFFFF" }}
+    >
+      Leatoinc
+    </span>
+  </Link>
+);
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -16,102 +64,87 @@ export default function Navbar() {
       setScrolled(window.scrollY > 50);
     };
     window.addEventListener("scroll", handleScroll);
+    handleScroll(); // set initial state
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
 
   return (
     <>
       <header
-        className={`fixed top-0 left-0 w-full z-999 transition-all duration-500 ${
-          scrolled ? "backdrop-blur-md" : "bg-transparent"
-        }`}
+        className="fixed top-0 left-0 w-full z-999 transition-all duration-300"
+        style={{
+          backgroundColor: scrolled ? `${INK}E6` : "transparent",
+          borderBottom: scrolled ? `1px solid ${LINE}` : "1px solid transparent",
+          backdropFilter: scrolled ? "blur(12px)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(12px)" : "none",
+        }}
       >
-        <nav className="container mx-auto px-6 lg:px-5 md:py-2 py-3 flex items-center justify-between">
-          {/* Logo + Address Container */}
-          <Link href="/" className="flex flex-col items-start gap-0 group">
-            {/* Desktop Logo (md and up) — ✅ WHITE */}
-            <div className="relative w-56 h-20 hidden md:block">
-              <Image
-                src="/images/navlogo12.png"
-                alt="Christopher Ryan Properties"
-                fill
-                className="object-contain brightness-125 contrast-150 drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]"
-                sizes="288px"
-                priority
-              />
-            </div>
-            
-            {/* Mobile Logo (below md) — ✅ WHITE */}
-            <div className="relative w-36 h-12 md:hidden">
-              <Image
-                src="/images/navlogo12.png"
-                alt="Christopher Ryan Properties"
-                fill
-                className="object-contain brightness-125 contrast-150 drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
-                sizes="160px"
-                priority
-              />
-            </div>
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+          {/* ===== LEFT : WORDMARK ===== */}
+          <Wordmark onClick={() => setIsMenuOpen(false)} />
 
-            {/* Address Line (Single Line) */}
-            <span className="text-[#FFF7F0]/90 text-[10px] md:text-xs font-medium tracking-wide whitespace-nowrap leading-tight">
-              11307 Stuart Mill Rd. Oakton, VA 22124
-            </span>
-          </Link>
-
-          {/* Right Side: Phone + Let's Talk + Menu */}
-          <div className="flex items-center gap-3 md:gap-5">
-            {/* Phone Number */}
+          {/* ===== RIGHT ===== */}
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* Phone — desktop only */}
             <a
               href={`tel:${CONTACT_INFO.phone}`}
-              className="hidden md:flex items-center gap-2 text-[#FFF7F0] hover:text-[#20B2B8] transition-colors"
+              className="hidden md:inline-flex items-center gap-2 text-[13px] font-medium transition-colors hover:text-[#93C5FD]"
+              style={{ color: "#DBEAFE" }}
             >
-              <Phone size={16} className="text-[#f4fafa]" />
-              <span className="text-sm font-medium tracking-wide">
+              <Phone size={15} style={{ color: ACCENT_SOFT }} />
+              <span className="tabular-nums tracking-wide">
                 {CONTACT_INFO.phone}
               </span>
             </a>
 
-            {/* Divider */}
-            <div className="hidden md:block w-px h-6 bg-[#FFF7F0]/20" />
+            {/* Hairline divider — desktop only */}
+            <span
+              className="hidden md:block h-5 w-px"
+              style={{ backgroundColor: LINE }}
+            />
 
-            {/* Let's Talk Button */}
+            {/* Let's Talk — desktop only */}
             <Link
-              href="https://calendar.app.google/zf9eeGFTRRb44AKU6"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-[#FFF7F0]/10 bg-[#FFF7F0]/10 backdrop-blur-sm text-[#FFF7F0] hover:bg-[#20B2B8]/20 hover:border-[#20B2B8]/40 transition-all duration-300"
+              href="/contact"
+              className="hidden sm:inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-colors"
+              style={{
+                backgroundColor: scrolled ? `${ACCENT}1A` : "rgba(29,78,216,0.18)",
+                border: `1px solid ${scrolled ? `${ACCENT}40` : "rgba(147,197,253,0.35)"}`,
+                color: "#DBEAFE",
+              }}
             >
-              <MessageCircle size={18} className="text-[#edf3f3]" />
-              <span className="text-sm font-medium">Let&apos;s Talk</span>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: ACCENT_SOFT }} />
+              Book a call
             </Link>
 
-            {/* Divider */}
-            <div className="hidden sm:block w-px h-6 bg-[#FFF7F0]/20" />
-
-            {/* Menu Button */}
+            {/* Menu button — always visible */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`flex items-center cursor-pointer gap-2 px-4 py-2 rounded-lg border transition-all duration-300 ${
-                isMenuOpen
-                  ? "bg-[#20B2B8]/20 border-[#20B2B8]/40"
-                  : "bg-[#FFF7F0]/10 border-[#FFF7F0]/10 hover:bg-[#FFF7F0]/20"
-              }`}
-              aria-label={isMenuOpen ? "Close Menu" : "Open Menu"}
+              className="inline-flex cursor-pointer  items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-colors"
+              style={{
+                backgroundColor: isMenuOpen ? "#FFFFFF" : "rgba(255,255,255,0.10)",
+                border: `1px solid ${isMenuOpen ? "#FFFFFF" : LINE}`,
+                color: "#FFFFFF",
+              }}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMenuOpen}
             >
-              {isMenuOpen ? (
-                <>
-                  <X size={18} className="text-[#FFF7F0]" />
-                  <span className="hidden sm:inline text-sm font-medium text-[#FFF7F0]">
-                    Close
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Menu size={18} className="text-[#FFF7F0]" />
-                  <span className="hidden sm:inline text-sm font-medium text-[#FFF7F0]">
-                    Menu
-                  </span>
-                </>
-              )}
+              {isMenuOpen ? <X size={16} /> : <Menu size={16} />}
+              <span className="hidden  sm:inline">
+                {isMenuOpen ? "Close" : "Menu"}
+              </span>
             </button>
           </div>
         </nav>

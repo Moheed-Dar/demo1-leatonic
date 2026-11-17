@@ -4,231 +4,414 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getAllBlogs } from "@/lib/blogs/api";
+import { motion, AnimatePresence } from "framer-motion";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Search,
-  Filter,
+  SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Calendar,
-  User,
   Tag,
-  ArrowRight,
+  ArrowUpRight,
   BookOpen,
-  Loader2,
   X,
+  Grid3X3,
+  List,
+  RefreshCw,
+  Newspaper,
 } from "lucide-react";
 
-// ==========================================
-// ✅ UPDATED COLOR PALETTE
-// ==========================================
-const TEAL = "#019586";
-const DARK_TEAL = "#014D41";
-const MINT = "#B1F1E9";
-const BRIGHT_TEAL = "#04D3C7";
-const WHITE = "#FFFFFF";
+gsap.registerPlugin(ScrollTrigger);
 
 // ==========================================
-// ✅ SAFE IMAGE HELPER
+// BLUE SCHEME (same as Properties page)
+// ==========================================
+const INK = "#0A1A2F";
+const PAPER = "#F3F6FB";
+const ACCENT = "#1D4ED8";
+const ACCENT_DK = "#1E3A8A";
+const ACCENT_SOFT = "#DBEAFE";
+const ACCENT_LT = "#93C5FD";
+const LINE = "#DCE3EE";
+const MUTED = "#56697E";
+const CARD = "#FFFFFF";
+
+const BG_IMAGE =
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2400&auto=format&fit=crop";
+
+const PLACEHOLDER =
+  "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80";
+
+const SORT_OPTIONS = [
+  { value: "createdAt-desc", label: "Newest First" },
+  { value: "createdAt-asc", label: "Oldest First" },
+  { value: "title-asc", label: "Title A-Z" },
+  { value: "title-desc", label: "Title Z-A" },
+];
+
+// ==========================================
+// HELPERS
 // ==========================================
 const getSafeImage = (img) => {
   if (!img) return null;
-  if (typeof img === "string") return img.trim();
+  if (typeof img === "string" && img.trim() !== "") return img.trim();
   if (typeof img === "object" && img?.url) return img.url.trim();
   return null;
 };
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const stripHtml = (html) => {
+  if (!html) return "";
+  return html.replace(/<[^>]*>/g, "");
+};
+
+const getPreview = (blog, len = 120) =>
+  blog.excerpt ||
+  (blog.content ? stripHtml(blog.content).slice(0, len) + "..." : null) ||
+  "No preview available";
+
+const getBlogImage = (blog) =>
+  getSafeImage(blog.featuredImage) || getSafeImage(blog.image) || PLACEHOLDER;
+
 // ==========================================
-// ✅ BLOG CARD
+// SMALL UI PIECES
 // ==========================================
-const BlogCard = ({ blog }) => {
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+const LightSelect = ({ value, onChange, options, className = "" }) => (
+  <div className={`relative ${className}`}>
+    <select
+      value={value}
+      onChange={onChange}
+      className="w-full cursor-pointer appearance-none rounded-xl py-2.5 pl-4 pr-8 text-xs font-medium shadow-sm transition-all duration-200 hover:border-[#1D4ED8] focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20"
+      style={{
+        backgroundColor: CARD,
+        color: INK,
+        border: `1px solid ${LINE}`,
+        colorScheme: "light",
+      }}
+    >
+      {options.map((opt) => (
+        <option
+          key={opt.value}
+          value={opt.value}
+          style={{ backgroundColor: CARD, color: INK, padding: "8px 12px" }}
+        >
+          {opt.label}
+        </option>
+      ))}
+    </select>
+    <ChevronDown
+      size={14}
+      strokeWidth={2.5}
+      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+      style={{ color: MUTED }}
+    />
+  </div>
+);
 
-  const stripHtml = (html) => {
-    if (!html) return "";
-    return html.replace(/<[^>]*>/g, "");
-  };
+const MetaPill = ({ icon: Icon, children }) => (
+  <div
+    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 backdrop-blur-md"
+    style={{
+      backgroundColor: "rgba(10,26,47,0.45)",
+      border: "1px solid rgba(255,255,255,0.12)",
+    }}
+  >
+    <Icon size={12} style={{ color: ACCENT_LT }} />
+    <span className="text-xs font-semibold text-white">{children}</span>
+  </div>
+);
 
-  const imageUrl = getSafeImage(blog.featuredImage) || blog.image || null;
+const CategoryButton = ({ label, isActive, onClick }) => (
+  <button
+    onClick={onClick}
+    className="whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+    style={
+      isActive
+        ? {
+            backgroundColor: ACCENT,
+            color: "#FFFFFF",
+            border: `1px solid ${ACCENT}`,
+            boxShadow: "0 4px 12px rgba(29,78,216,0.40)",
+          }
+        : {
+            backgroundColor: CARD,
+            color: MUTED,
+            border: `1px solid ${LINE}`,
+          }
+    }
+  >
+    {label}
+  </button>
+);
 
-  const preview =
-    blog.excerpt ||
-    (blog.content ? stripHtml(blog.content).slice(0, 120) + "..." : null) ||
-    "No preview available";
+const SkeletonCard = () => (
+  <div
+    className="animate-pulse overflow-hidden rounded-2xl"
+    style={{ backgroundColor: CARD, border: `1px solid ${LINE}` }}
+  >
+    <div className="h-104" style={{ backgroundColor: LINE }} />
+  </div>
+);
+
+const SkeletonList = () => (
+  <div
+    className="flex h-52 animate-pulse overflow-hidden rounded-2xl"
+    style={{ backgroundColor: CARD, border: `1px solid ${LINE}` }}
+  >
+    <div className="w-full" style={{ backgroundColor: LINE }} />
+  </div>
+);
+
+// ==========================================
+// MOTION VARIANTS
+// ==========================================
+const gridContainerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+const gridItemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+// ==========================================
+// GRID CARD
+// ==========================================
+const BlogCard = ({ blog, index = 0 }) => {
+  const img = getBlogImage(blog);
 
   return (
-    <Link href={`/blogs/${blog._id}`} className="group block">
-      <article
-        className="bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-        style={{
-          border: `1px solid ${MINT}80`,
-          boxShadow: `0 2px 12px ${TEAL}10`,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = `${TEAL}`;
-          e.currentTarget.style.boxShadow = `0 8px 30px ${TEAL}25`;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = `${MINT}80`;
-          e.currentTarget.style.boxShadow = `0 2px 12px ${TEAL}10`;
-        }}
-      >
-        {/* Image */}
-        <div className="relative h-52 w-full overflow-hidden bg-slate-100">
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={blog.title || "Blog image"}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          ) : (
-            <div
-              className="flex items-center justify-center h-full"
-              style={{
-                background: `linear-gradient(to bottom right, ${MINT}, ${TEAL}20)`,
-              }}
-            >
-              <BookOpen className="w-12 h-12" style={{ color: `${TEAL}80` }} />
-            </div>
-          )}
+    <motion.div
+      variants={gridItemVariants}
+      whileHover={{ y: -6 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative h-104 cursor-pointer overflow-hidden rounded-2xl transition-shadow duration-500 hover:shadow-[0_30px_60px_-20px_rgba(10,26,47,0.40)] sm:h-108"
+      style={{ backgroundColor: CARD, border: `1px solid ${LINE}` }}
+    >
+      <Link href={`/blogs/${blog._id}`} className="relative block h-full w-full">
+        <Image
+          src={img}
+          alt={blog.title || "Blog image"}
+          fill
+          priority={index < 3}
+          unoptimized
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
 
-          {blog.category && (
-            <span
-              className="absolute top-3 left-3 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide z-10"
-              style={{
-                background: `linear-gradient(135deg, ${TEAL}, ${BRIGHT_TEAL})`,
-              }}
-            >
-              {blog.category}
-            </span>
-          )}
-        </div>
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.30) 50%, rgba(0,0,0,0.10) 100%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to right, rgba(0,0,0,0.30) 0%, transparent 60%)",
+          }}
+        />
 
-        {/* Content */}
-        <div className="p-5">
-          {/* Meta */}
-          <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />
-              {formatDate(blog.createdAt)}
-            </span>
-            {blog.author?.name && (
-              <span className="flex items-center gap-1">
-                <User className="w-3.5 h-3.5" />
-                {blog.author.name}
+        {/* Top badges */}
+        <div className="absolute left-4 right-4 top-4 z-10 flex items-start justify-between">
+          <div className="flex flex-wrap gap-2">
+            {blog.category && (
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md"
+                style={{ backgroundColor: ACCENT, color: "#FFFFFF" }}
+              >
+                {blog.category}
               </span>
             )}
           </div>
-
-          {/* Title */}
-          <h3
-            className="text-lg font-semibold text-slate-900 mb-2 line-clamp-2 transition-colors duration-200"
-            style={{ color: DARK_TEAL }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = TEAL)}
-            onMouseLeave={(e) => (e.currentTarget.style.color = DARK_TEAL)}
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.92)",
+              border: `1px solid ${LINE}`,
+            }}
           >
+            <BookOpen size={15} style={{ color: MUTED }} />
+          </div>
+        </div>
+
+        {/* Bottom content */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 p-5">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {blog.createdAt && (
+              <MetaPill icon={Calendar}>{formatDate(blog.createdAt)}</MetaPill>
+            )}
+            {blog.tags?.length > 0 && (
+              <MetaPill icon={Tag}>{blog.tags.length}</MetaPill>
+            )}
+          </div>
+
+          <h3 className="mb-1.5 line-clamp-2 text-xl font-semibold leading-tight text-white drop-shadow-lg">
             {blog.title}
           </h3>
 
-          {/* Preview */}
-          <p className="text-sm text-slate-600 leading-relaxed mb-4 line-clamp-3">
-            {preview}
+          <p
+            className="mb-4 line-clamp-2 text-sm leading-relaxed"
+            style={{ color: "rgba(255,255,255,0.80)" }}
+          >
+            {getPreview(blog)}
           </p>
 
-          {/* Tags */}
-          {blog.tags && blog.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {blog.tags.slice(0, 3).map((tag, i) => (
+          <div className="flex items-end justify-between">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {blog.tags?.slice(0, 2).map((tag, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold"
                   style={{
-                    color: TEAL,
-                    backgroundColor: `${MINT}`,
+                    color: ACCENT_SOFT,
+                    backgroundColor: "rgba(29,78,216,0.35)",
+                    border: "1px solid rgba(147,197,253,0.30)",
                   }}
                 >
-                  <Tag className="w-3 h-3" />
                   {tag}
                 </span>
               ))}
-              {blog.tags.length > 3 && (
-                <span className="text-xs text-slate-400 px-1 py-0.5">
-                  +{blog.tags.length - 3} more
+              {blog.tags?.length > 2 && (
+                <span
+                  className="text-[10px]"
+                  style={{ color: "rgba(255,255,255,0.65)" }}
+                >
+                  +{blog.tags.length - 2} more
                 </span>
               )}
             </div>
-          )}
-
-          {/* Read More */}
-          <div
-            className="flex items-center gap-1 text-sm font-medium group-hover:gap-2 transition-all duration-200"
-            style={{ color: TEAL }}
-          >
-            Read More
-            <ArrowRight className="w-4 h-4" />
+            <div
+              className="flex h-9 w-9 shrink-0 translate-y-2 items-center justify-center rounded-xl opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
+              style={{
+                backgroundColor: ACCENT,
+                color: "#FFFFFF",
+                boxShadow: "0 4px 12px rgba(29,78,216,0.50)",
+              }}
+            >
+              <ArrowUpRight size={16} />
+            </div>
           </div>
         </div>
-      </article>
-    </Link>
+      </Link>
+    </motion.div>
   );
 };
 
 // ==========================================
-// ✅ CATEGORY BUTTON
+// LIST CARD
 // ==========================================
-const CategoryButton = ({ category, count, isActive, onClick }) => (
-  <button
-    onClick={onClick}
-    className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap"
-    style={
-      isActive
-        ? {
-            background: `linear-gradient(135deg, ${TEAL}, ${BRIGHT_TEAL})`,
-            color: WHITE,
-            boxShadow: `0 2px 8px ${TEAL}40`,
-          }
-        : {
-            backgroundColor: WHITE,
-            color: "#64748b",
-            border: `1px solid ${MINT}`,
-          }
-    }
-    onMouseEnter={(e) => {
-      if (!isActive) {
-        e.currentTarget.style.borderColor = TEAL;
-        e.currentTarget.style.color = TEAL;
-      }
-    }}
-    onMouseLeave={(e) => {
-      if (!isActive) {
-        e.currentTarget.style.borderColor = MINT;
-        e.currentTarget.style.color = "#64748b";
-      }
-    }}
-  >
-    {category}
-    {count > 0 && (
-      <span
-        className="ml-1.5 text-xs"
-        style={{ color: isActive ? "rgba(255,255,255,0.8)" : "#94a3b8" }}
-      >
-        ({count})
-      </span>
-    )}
-  </button>
-);
+const BlogListItem = ({ blog }) => {
+  const img = getBlogImage(blog);
+
+  return (
+    <motion.div
+      variants={gridItemVariants}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="group relative h-52 cursor-pointer overflow-hidden rounded-2xl transition-shadow duration-500 hover:shadow-[0_30px_60px_-20px_rgba(10,26,47,0.40)] sm:h-56"
+      style={{ backgroundColor: CARD, border: `1px solid ${LINE}` }}
+    >
+      <Link href={`/blogs/${blog._id}`} className="relative block h-full w-full">
+        <Image
+          src={img}
+          alt={blog.title || "Blog image"}
+          fill
+          unoptimized
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          sizes="(max-width: 1024px) 100vw, 50vw"
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.28) 55%, transparent 100%)",
+          }}
+        />
+
+        <div className="absolute left-3 right-3 top-3 z-10 flex items-start justify-between">
+          <div className="flex gap-1.5">
+            {blog.category && (
+              <span
+                className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                style={{ backgroundColor: ACCENT, color: "#FFFFFF" }}
+              >
+                {blog.category}
+              </span>
+            )}
+          </div>
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.92)",
+              border: `1px solid ${LINE}`,
+            }}
+          >
+            <ArrowUpRight size={14} style={{ color: MUTED }} />
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+          <h3 className="mb-1 line-clamp-1 text-lg leading-tight text-white drop-shadow-lg">
+            {blog.title}
+          </h3>
+          <p
+            className="mb-1.5 line-clamp-1 text-xs"
+            style={{ color: "rgba(255,255,255,0.80)" }}
+          >
+            {getPreview(blog, 90)}
+          </p>
+          <div
+            className="flex items-center gap-1.5 text-xs"
+            style={{ color: "rgba(255,255,255,0.80)" }}
+          >
+            <Calendar size={11} style={{ color: ACCENT_LT }} />
+            <span>{formatDate(blog.createdAt)}</span>
+            {blog.tags?.length > 0 && (
+              <>
+                <span style={{ color: "rgba(255,255,255,0.3)" }} className="mx-1">
+                  ·
+                </span>
+                <Tag size={11} style={{ color: ACCENT_LT }} />
+                <span className="truncate">
+                  {blog.tags.slice(0, 2).join(", ")}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+};
 
 // ==========================================
-// ✅ MAIN BLOGS PAGE
+// MAIN BLOGS PAGE
 // ==========================================
 export default function BlogsPage() {
+  const sectionRef = useRef(null);
+  const bgRef = useRef(null);
+  const headingRef = useRef(null);
+  const controlsRef = useRef(null);
+
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -242,19 +425,76 @@ export default function BlogsPage() {
 
   // Filters
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
   const [status] = useState("published");
   const [sortBy, setSortBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
 
-  const searchTimeoutRef = useRef(null);
+  // UI
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState("grid");
+
+  const searchInputRef = useRef(null);
+  const debounceTimerRef = useRef(null);
 
   // Dynamic categories
   const [availableCategories, setAvailableCategories] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(true);
 
   // ==========================================
-  // ✅ FETCH CATEGORIES
+  // GSAP (guarded against null refs)
+  // ==========================================
+  useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const ctx = gsap.context(() => {
+      if (bgRef.current) {
+        gsap.to(bgRef.current, {
+          yPercent: 22,
+          ease: "none",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
+      }
+      if (headingRef.current) {
+        gsap.from(headingRef.current, {
+          opacity: 0,
+          y: 36,
+          duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: headingRef.current,
+            start: "top 90%",
+            toggleActions: "play none none none",
+          },
+        });
+      }
+      if (controlsRef.current) {
+        gsap.from(controlsRef.current, {
+          opacity: 0,
+          y: 24,
+          duration: 0.8,
+          delay: 0.15,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: controlsRef.current,
+            start: "top 90%",
+            toggleActions: "play none none none",
+          },
+        });
+      }
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  // ==========================================
+  // FETCH CATEGORIES
   // ==========================================
   useEffect(() => {
     const fetchCategories = async () => {
@@ -288,7 +528,7 @@ export default function BlogsPage() {
   }, []);
 
   // ==========================================
-  // ✅ FETCH BLOGS
+  // FETCH BLOGS
   // ==========================================
   const fetchBlogs = useCallback(async () => {
     setLoading(true);
@@ -326,43 +566,43 @@ export default function BlogsPage() {
     fetchBlogs();
   }, [fetchBlogs]);
 
+  // ==========================================
+  // SEARCH (debounced)
+  // ==========================================
   useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // ==========================================
-  // ✅ SEARCH HANDLER (Debounced)
-  // ==========================================
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearch(value);
-
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => {
-      setCurrentPage(1);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      setSearch((prev) => {
+        if (prev !== searchInput) setCurrentPage(1);
+        return searchInput;
+      });
     }, 300);
-  };
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, [searchInput]);
 
-  const clearSearch = () => {
-    setSearch("");
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setSearch(searchInput);
     setCurrentPage(1);
   };
 
+  const clearSearch = () => {
+    setSearchInput("");
+    setSearch("");
+    setCurrentPage(1);
+    searchInputRef.current?.focus();
+  };
+
   // ==========================================
-  // ✅ CATEGORY HANDLER
+  // HANDLERS
   // ==========================================
   const handleCategoryChange = (cat) => {
     setActiveCategory(cat === "All" ? "" : cat);
     setCurrentPage(1);
   };
 
-  // ==========================================
-  // ✅ SORT HANDLER
-  // ==========================================
   const handleSortChange = (e) => {
     const [by, ord] = e.target.value.split("-");
     setSortBy(by);
@@ -370,9 +610,6 @@ export default function BlogsPage() {
     setCurrentPage(1);
   };
 
-  // ==========================================
-  // ✅ PAGINATION
-  // ==========================================
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -388,266 +625,377 @@ export default function BlogsPage() {
     if (end - start + 1 < maxVisible) {
       start = Math.max(1, end - maxVisible + 1);
     }
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
+    for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   };
 
-  // ==========================================
-  // ✅ CLEAR ALL FILTERS
-  // ==========================================
   const clearAllFilters = () => {
     setSearch("");
+    setSearchInput("");
     setActiveCategory("");
     setSortBy("createdAt");
     setOrder("desc");
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = search || activeCategory;
+  const hasActiveFilters = Boolean(search || activeCategory);
 
   // ==========================================
-  // ✅ RENDER
+  // RENDER
   // ==========================================
   return (
-    <div className="min-h-screen bg-white">
-      {/* ============================== */}
-      {/* HERO SECTION */}
-      {/* ============================== */}
-      <section
-        className="relative overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${DARK_TEAL}, ${TEAL})` }}
+    <div
+      ref={sectionRef}
+      className="relative min-h-screen overflow-hidden"
+      style={{ backgroundColor: PAPER, color: INK }}
+    >
+      {/* Parallax background */}
+      <div
+        ref={bgRef}
+        className="pointer-events-none fixed inset-0 z-0 will-change-transform"
+        style={{ height: "130%", top: "-15%" }}
       >
-        {/* Decorative blobs */}
-        <div
-          className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl -mr-20 -mt-20"
-          style={{ background: `radial-gradient(circle, ${BRIGHT_TEAL}40, transparent)` }}
+        <Image
+          src={BG_IMAGE}
+          alt=""
+          fill
+          unoptimized
+          className="object-cover"
+          sizes="100vw"
         />
         <div
-          className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl -ml-20 -mb-20"
-          style={{ background: `radial-gradient(circle, ${MINT}30, transparent)` }}
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(180deg, ${INK}E6 0%, ${INK}CC 15%, ${INK}80 30%, ${INK}33 45%, transparent 60%)`,
+          }}
         />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(0deg, ${PAPER}F2 0%, ${PAPER}CC 20%, transparent 50%)`,
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 90% 8%, rgba(29,78,216,0.30) 0%, rgba(29,78,216,0.08) 25%, transparent 50%)`,
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 10% 35%, rgba(147,197,253,0.10) 0%, transparent 35%)`,
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, #FFFFFF 1px, transparent 0)`,
+            backgroundSize: "40px 40px",
+          }}
+        />
+      </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-          <div className="text-center max-w-3xl mx-auto">
-            <span
-              className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest px-4 py-2 rounded-full mb-6"
-              style={{
-                backgroundColor: `${MINT}20`,
-                backdropFilter: "blur(8px)",
-                color: MINT,
-              }}
-            >
-              <BookOpen className="w-4 h-4" />
-              Our Blog
-            </span>
-
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight leading-tight mb-6">
-              Insights &{" "}
-              <span
-                style={{
-                  background: `linear-gradient(to right, ${BRIGHT_TEAL}, ${MINT})`,
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Articles
-              </span>
-            </h1>
-
-            <p className="text-lg leading-relaxed mb-8" style={{ color: `${MINT}CC` }}>
-              Stay updated with the latest trends, tips, and stories from our experts.
-            </p>
-
-            {/* Search */}
-            <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 z-10 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={handleSearchChange}
-                placeholder="Search blogs by title, content, or tags..."
-                className="relative w-full pl-12 pr-10 py-4 border rounded-xl text-white placeholder-slate-400 focus:outline-none transition-all"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.08)",
-                  backdropFilter: "blur(8px)",
-                  borderColor: `${MINT}40`,
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = `${BRIGHT_TEAL}`;
-                  e.currentTarget.style.boxShadow = `0 0 0 2px ${BRIGHT_TEAL}40`;
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = `${MINT}40`;
-                  e.currentTarget.style.boxShadow = "none";
-                }}
+      {/* Hero */}
+      <div className="relative z-20">
+        <div className="mx-auto max-w-7xl px-4 pb-12 pt-28 sm:px-6 sm:pb-16 sm:pt-32">
+          <div className="max-w-2xl">
+            <div className="mb-4 flex items-center gap-3">
+              <motion.span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: ACCENT_LT }}
+                animate={{ opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
               />
-              {search && (
-                <button
-                  onClick={clearSearch}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-white transition-colors z-10"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+              <p
+                className="inline-flex items-center gap-2 text-[13px] font-medium"
+                style={{ color: ACCENT_SOFT }}
+              >
+                <Newspaper size={14} style={{ color: ACCENT_LT }} />
+                Insights & articles
+              </p>
+            </div>
+
+            <div ref={headingRef}>
+              <h1
+                className="mb-4 text-[34px] font-semibold leading-[1.1] tracking-[-0.02em] sm:text-4xl lg:text-[48px]"
+                style={{ color: "#FFFFFF" }}
+              >
+                Our Blogs
+              </h1>
+              <div
+                className="mb-4 h-1 w-24 rounded-full sm:w-32"
+                style={{ backgroundColor: ACCENT_LT }}
+              />
+              <p
+                className="mb-8 max-w-xl text-[15px] leading-[1.65] sm:text-base"
+                style={{ color: "rgba(219,234,254,0.75)" }}
+              >
+                Stay updated with the latest trends, tips, and stories from our
+                experts — curated insights to inform and inspire.
+              </p>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ============================== */}
-      {/* ✅ CATEGORY FILTERS */}
-      {/* ============================== */}
-      <section
-        className="sticky top-0 z-30 backdrop-blur-sm"
-        style={{
-          backgroundColor: `${WHITE}F2`, // Slightly transparent white
-          borderBottom: `1px solid ${MINT}`,
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Dynamic Categories */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 w-full sm:w-auto scrollbar-hide">
-              <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+          {/* Search + Controls */}
+          <div ref={controlsRef} className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Search */}
+              <div className="relative min-w-70 flex-1">
+                <form onSubmit={handleSearchSubmit}>
+                  <div
+                    className="relative flex items-center rounded-2xl shadow-sm transition-all focus-within:border-[#1D4ED8] focus-within:ring-2 focus-within:ring-[#1D4ED8]/20"
+                    style={{ backgroundColor: CARD, border: `1px solid ${LINE}` }}
+                  >
+                    <Search
+                      size={16}
+                      className="absolute left-3.5"
+                      style={{ color: MUTED }}
+                    />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      placeholder="Search blogs by title, content, or tags..."
+                      className="w-full bg-transparent py-3 pl-9 pr-20 text-sm focus:outline-none"
+                      style={{ color: INK }}
+                      autoComplete="off"
+                    />
+                    {searchInput && (
+                      <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="absolute right-12 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors hover:bg-[#0A1A2F]/10"
+                        title="Clear search"
+                      >
+                        <X size={14} style={{ color: MUTED }} />
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl transition-transform hover:scale-105"
+                      style={{
+                        backgroundColor: ACCENT,
+                        color: "#FFFFFF",
+                        boxShadow: "0 4px 12px rgba(29,78,216,0.40)",
+                      }}
+                      title="Search"
+                    >
+                      <Search size={16} />
+                    </button>
+                  </div>
+                </form>
+              </div>
 
-              <CategoryButton
-                category="All"
-                count={0}
-                isActive={!activeCategory}
-                onClick={() => handleCategoryChange("All")}
-              />
+              {/* Count */}
+              <motion.div
+                key={totalBlogs}
+                initial={{ scale: 0.9, opacity: 0.5 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium"
+                style={{
+                  backgroundColor: CARD,
+                  border: `1px solid ${LINE}`,
+                  color: INK,
+                }}
+              >
+                {totalBlogs} {totalBlogs === 1 ? "blog" : "blogs"}
+              </motion.div>
 
-              {!categoryLoading && availableCategories.length > 0 && availableCategories.map((cat) => (
-                <CategoryButton
-                  key={cat}
-                  category={cat}
-                  count={0}
-                  isActive={activeCategory === cat}
-                  onClick={() => handleCategoryChange(cat)}
-                />
-              ))}
+              {/* Refresh */}
+              <button
+                onClick={fetchBlogs}
+                disabled={loading}
+                className="shrink-0 rounded-xl p-2.5 transition-all hover:border-[#1D4ED8] hover:text-[#1D4ED8] disabled:opacity-40"
+                style={{
+                  backgroundColor: CARD,
+                  border: `1px solid ${LINE}`,
+                  color: MUTED,
+                }}
+                title="Refresh"
+              >
+                <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+              </button>
 
-              {categoryLoading && (
-                <span className="text-xs text-slate-400 px-3 py-2">
-                  Loading categories...
-                </span>
-              )}
+              {/* Filters toggle */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex shrink-0 items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all"
+                style={
+                  showFilters || hasActiveFilters
+                    ? {
+                        backgroundColor: ACCENT,
+                        color: "#FFFFFF",
+                        boxShadow: "0 4px 12px rgba(29,78,216,0.40)",
+                      }
+                    : {
+                        backgroundColor: CARD,
+                        color: MUTED,
+                        border: `1px solid ${LINE}`,
+                      }
+                }
+              >
+                <SlidersHorizontal size={15} />
+                <span>Filters</span>
+              </button>
 
-              {!categoryLoading && availableCategories.length === 0 && (
-                <span className="text-xs text-slate-400 px-3 py-2">
-                  No categories available
-                </span>
-              )}
-            </div>
+              {/* View toggle */}
+              <div
+                className="flex shrink-0 items-center rounded-xl p-1"
+                style={{ backgroundColor: CARD, border: `1px solid ${LINE}` }}
+              >
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className="rounded-lg p-1.5 transition-colors"
+                  style={
+                    viewMode === "grid"
+                      ? { backgroundColor: ACCENT, color: "#FFFFFF" }
+                      : { color: MUTED }
+                  }
+                >
+                  <Grid3X3 size={15} />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className="rounded-lg p-1.5 transition-colors"
+                  style={
+                    viewMode === "list"
+                      ? { backgroundColor: ACCENT, color: "#FFFFFF" }
+                      : { color: MUTED }
+                  }
+                >
+                  <List size={15} />
+                </button>
+              </div>
 
-            {/* Sort */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-slate-500">Sort:</span>
-              <select
+              {/* Sort */}
+              <LightSelect
+                className="w-36 shrink-0"
                 value={`${sortBy}-${order}`}
                 onChange={handleSortChange}
-                className="text-sm border rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none transition-all"
-                style={{
-                  borderColor: `${MINT}`,
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = TEAL;
-                  e.currentTarget.style.boxShadow = `0 0 0 2px ${TEAL}30`;
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = MINT;
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <option value="createdAt-desc">Newest First</option>
-                <option value="createdAt-asc">Oldest First</option>
-                <option value="title-asc">Title A-Z</option>
-                <option value="title-desc">Title Z-A</option>
-              </select>
+                options={SORT_OPTIONS}
+              />
             </div>
+
+            {/* Category filter panel */}
+            <AnimatePresence initial={false}>
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div
+                    className="rounded-2xl p-4 shadow-sm"
+                    style={{
+                      backgroundColor: `${CARD}F2`,
+                      border: `1px solid ${LINE}`,
+                    }}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <span
+                        className="text-[11px] font-bold uppercase tracking-wider"
+                        style={{ color: ACCENT_DK }}
+                      >
+                        Categories
+                      </span>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-xs underline underline-offset-2 transition-colors hover:text-[#1D4ED8]"
+                          style={{ color: MUTED }}
+                        >
+                          Clear all filters
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CategoryButton
+                        label="All"
+                        isActive={!activeCategory}
+                        onClick={() => handleCategoryChange("All")}
+                      />
+                      {!categoryLoading &&
+                        availableCategories.map((cat) => (
+                          <CategoryButton
+                            key={cat}
+                            label={cat}
+                            isActive={activeCategory === cat}
+                            onClick={() => handleCategoryChange(cat)}
+                          />
+                        ))}
+                      {categoryLoading && (
+                        <span className="px-3 py-2 text-xs" style={{ color: MUTED }}>
+                          Loading categories...
+                        </span>
+                      )}
+                      {!categoryLoading && availableCategories.length === 0 && (
+                        <span className="px-3 py-2 text-xs" style={{ color: MUTED }}>
+                          No categories available
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ============================== */}
-      {/* BLOGS GRID */}
-      {/* ============================== */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        {/* Results Count */}
-        <div className="flex items-center justify-between mb-8">
-          <p className="text-sm text-slate-500">
-            {loading ? (
-              "Loading..."
-            ) : (
-              <>
-                Showing{" "}
-                <span className="font-semibold text-slate-700">{blogs.length}</span> of{" "}
-                <span className="font-semibold text-slate-700">{totalBlogs}</span> blogs
-                {search && (
-                  <>
-                    {" "}for &ldquo;
-                    <span className="font-semibold" style={{ color: TEAL }}>{search}</span>
-                    &rdquo;
-                  </>
-                )}
-                {activeCategory && (
-                  <>
-                    {" "}in{" "}
-                    <span className="font-semibold" style={{ color: TEAL }}>{activeCategory}</span>
-                  </>
-                )}
-              </>
-            )}
-          </p>
-
-          {hasActiveFilters && !loading && (
-            <button
-              onClick={clearAllFilters}
-              className="text-xs text-slate-500 underline underline-offset-2 transition-colors"
-              style={{ color: "#64748b" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = TEAL)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#64748b")}
-            >
-              Clear all filters
-            </button>
-          )}
-        </div>
-
+      {/* Content */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
         {/* Loading */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2
-              className="w-10 h-10 animate-spin mb-4"
-              style={{ color: TEAL }}
-            />
-            <p className="text-slate-500 text-sm">Loading blogs...</p>
-          </div>
-        )}
+        {loading &&
+          (viewMode === "grid" ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonList key={i} />
+              ))}
+            </div>
+          ))}
 
         {/* Error */}
         {error && !loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <div
-              className="border rounded-xl p-8 text-center max-w-md"
+              className="max-w-md rounded-2xl p-8 text-center"
               style={{
-                backgroundColor: `${DARK_TEAL}08`,
-                borderColor: `${DARK_TEAL}20`,
+                backgroundColor: CARD,
+                border: `1px solid ${LINE}`,
+                boxShadow: "0 12px 30px -8px rgba(10,26,47,0.15)",
               }}
             >
-              <p className="font-medium mb-2" style={{ color: DARK_TEAL }}>
+              <div
+                className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"
+                style={{ backgroundColor: ACCENT_SOFT }}
+              >
+                <X className="h-6 w-6" style={{ color: ACCENT_DK }} />
+              </div>
+              <p className="mb-2 text-lg font-semibold" style={{ color: INK }}>
                 Failed to load blogs
               </p>
-              <p className="text-sm mb-4" style={{ color: `${DARK_TEAL}CC` }}>{error}</p>
+              <p className="mb-4 text-sm" style={{ color: MUTED }}>
+                {error}
+              </p>
               <button
                 onClick={fetchBlogs}
-                className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+                className="rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:opacity-90"
                 style={{
-                  backgroundColor: TEAL,
+                  backgroundColor: ACCENT,
+                  color: "#FFFFFF",
+                  boxShadow: "0 4px 12px rgba(29,78,216,0.40)",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = BRIGHT_TEAL)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = TEAL)}
               >
                 Try Again
               </button>
@@ -657,20 +1005,29 @@ export default function BlogsPage() {
 
         {/* Empty */}
         {!loading && !error && blogs.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <BookOpen className="w-16 h-16 mb-4" style={{ color: `${TEAL}40` }} />
-            <h3 className="text-xl font-semibold text-slate-700 mb-2">No blogs found</h3>
-            <p className="text-slate-500 text-sm mb-6 text-center max-w-md">
-              {search || activeCategory
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div
+              className="mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+              style={{ backgroundColor: ACCENT_SOFT }}
+            >
+              <BookOpen className="h-8 w-8" style={{ color: ACCENT }} />
+            </div>
+            <h3 className="mb-1 text-lg font-semibold" style={{ color: INK }}>
+              No Blogs Found
+            </h3>
+            <p className="mb-6 text-sm" style={{ color: MUTED }}>
+              {hasActiveFilters
                 ? "Try adjusting your search or filters."
                 : "No blogs published yet."}
             </p>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+                className="rounded-xl px-4 py-2 text-sm font-semibold transition-colors hover:opacity-90"
                 style={{
-                  background: `linear-gradient(135deg, ${TEAL}, ${BRIGHT_TEAL})`,
+                  backgroundColor: ACCENT,
+                  color: "#FFFFFF",
+                  boxShadow: "0 4px 12px rgba(29,78,216,0.40)",
                 }}
               >
                 Clear Filters
@@ -679,87 +1036,90 @@ export default function BlogsPage() {
           </div>
         )}
 
-        {/* Grid */}
-        {!loading && !error && blogs.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {blogs.map((blog) => (
-              <BlogCard key={blog._id} blog={blog} />
+        {/* Grid view */}
+        {!loading && !error && blogs.length > 0 && viewMode === "grid" && (
+          <motion.div
+            key={`grid-${currentPage}-${search}-${activeCategory}-${sortBy}-${order}`}
+            variants={gridContainerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {blogs.map((blog, i) => (
+              <BlogCard key={blog._id || i} blog={blog} index={i} />
             ))}
-          </div>
+          </motion.div>
+        )}
+
+        {/* List view */}
+        {!loading && !error && blogs.length > 0 && viewMode === "list" && (
+          <motion.div
+            key={`list-${currentPage}-${search}-${activeCategory}-${sortBy}-${order}`}
+            variants={gridContainerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+          >
+            {blogs.map((blog, i) => (
+              <BlogListItem key={blog._id || i} blog={blog} />
+            ))}
+          </motion.div>
         )}
 
         {/* Pagination */}
         {!loading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-12">
+          <div className="mt-12 flex items-center justify-center gap-2">
             <button
               onClick={() => goToPage(currentPage - 1)}
               disabled={!hasPrevPage}
-              className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-              style={
-                hasPrevPage
-                  ? {
-                      backgroundColor: WHITE,
-                      border: `1px solid ${MINT}`,
-                      color: DARK_TEAL,
-                    }
-                  : {
-                      backgroundColor: "#f1f5f9",
-                      color: "#94a3b8",
-                      cursor: "not-allowed",
-                    }
-              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:border-[#1D4ED8] hover:text-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-30"
+              style={{
+                border: `1px solid ${LINE}`,
+                backgroundColor: CARD,
+                color: MUTED,
+              }}
             >
-              <ChevronLeft className="w-4 h-4" /> Prev
+              <ChevronLeft size={18} />
             </button>
 
-            <div className="flex items-center gap-1">
-              {getPageNumbers().map((page) => (
-                <button
-                  key={page}
-                  onClick={() => goToPage(page)}
-                  className="w-10 h-10 rounded-lg text-sm font-medium transition-all"
-                  style={
-                    page === currentPage
-                      ? {
-                          background: `linear-gradient(135deg, ${TEAL}, ${BRIGHT_TEAL})`,
-                          color: WHITE,
-                          boxShadow: `0 2px 8px ${TEAL}40`,
-                        }
-                      : {
-                          backgroundColor: WHITE,
-                          border: `1px solid ${MINT}`,
-                          color: DARK_TEAL,
-                        }
-                  }
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
+            {getPageNumbers().map((page) => (
+              <button
+                key={page}
+                onClick={() => goToPage(page)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-semibold transition-colors"
+                style={
+                  page === currentPage
+                    ? {
+                        backgroundColor: ACCENT,
+                        color: "#FFFFFF",
+                        boxShadow: "0 4px 12px rgba(29,78,216,0.40)",
+                      }
+                    : {
+                        border: `1px solid ${LINE}`,
+                        backgroundColor: CARD,
+                        color: MUTED,
+                      }
+                }
+              >
+                {page}
+              </button>
+            ))}
 
             <button
               onClick={() => goToPage(currentPage + 1)}
               disabled={!hasNextPage}
-              className="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-              style={
-                hasNextPage
-                  ? {
-                      backgroundColor: WHITE,
-                      border: `1px solid ${MINT}`,
-                      color: DARK_TEAL,
-                    }
-                  : {
-                      backgroundColor: "#f1f5f9",
-                      color: "#94a3b8",
-                      cursor: "not-allowed",
-                    }
-              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:border-[#1D4ED8] hover:text-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-30"
+              style={{
+                border: `1px solid ${LINE}`,
+                backgroundColor: CARD,
+                color: MUTED,
+              }}
             >
-              Next <ChevronRight className="w-4 h-4" />
+              <ChevronRight size={18} />
             </button>
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }
